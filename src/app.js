@@ -1,4 +1,5 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
+import { createMediaMetadata, registerRadioMediaSessionActions } from "./mediaSession.js";
 import {
   buildStreamUrl,
   getNextIndex,
@@ -244,7 +245,7 @@ function updateMediaSession(channel) {
     return;
   }
 
-  navigator.mediaSession.metadata = new MediaMetadata({
+  navigator.mediaSession.metadata = createMediaMetadata({
     title: channel.name,
     artist: getRegionName(channel.regionId),
     album: "Radio",
@@ -257,10 +258,12 @@ function setupMediaSessionActions() {
     return;
   }
 
-  navigator.mediaSession.setActionHandler("previoustrack", () => playRelative("previous"));
-  navigator.mediaSession.setActionHandler("nexttrack", () => playRelative("next"));
-  navigator.mediaSession.setActionHandler("play", () => audio.play());
-  navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+  registerRadioMediaSessionActions(navigator.mediaSession, {
+    previous: () => playRelative("previous"),
+    next: () => playRelative("next"),
+    play: () => audio.play(),
+    pause: () => audio.pause(),
+  });
 }
 
 function switchTab(tab) {
