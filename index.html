@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Radio Player</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="player-panel" aria-labelledby="player-title">
+        <div class="brand-row">
+          <div>
+            <p class="eyebrow">Korea Radio</p>
+            <h1 id="player-title">라디오 플레이어</h1>
+          </div>
+          <p class="channel-count" id="playlistCount">0 채널</p>
+        </div>
+
+        <div class="now-card">
+          <p class="label">현재 채널</p>
+          <h2 id="nowTitle">채널을 선택해 주세요</h2>
+          <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
+        </div>
+
+        <audio id="audioPlayer" controls preload="none"></audio>
+
+        <div class="transport" aria-label="재생목록 이동">
+          <button class="transport-button" id="previousButton" type="button" aria-label="이전 채널">⏮</button>
+          <button class="transport-button" id="nextButton" type="button" aria-label="다음 채널">⏭</button>
+        </div>
+
+        <p class="status-line" id="statusLine" role="status"></p>
+      </section>
+
+      <section class="library-panel">
+        <div class="tabs" role="tablist" aria-label="채널 보기">
+          <button class="tab is-active" id="playlistTab" type="button" role="tab" aria-selected="true" aria-controls="playlistPane">재생 목록</button>
+          <button class="tab" id="allTab" type="button" role="tab" aria-selected="false" aria-controls="allPane">전체 채널</button>
+        </div>
+
+        <section class="tab-pane is-active" id="playlistPane" role="tabpanel" aria-labelledby="playlistTab">
+          <div class="section-head">
+            <div>
+              <p class="label">Saved Playlist</p>
+              <h2>재생 목록</h2>
+            </div>
+            <button class="text-button" id="showAllButton" type="button">채널 편집</button>
+          </div>
+          <div class="list" id="playlistList"></div>
+        </section>
+
+        <section class="tab-pane" id="allPane" role="tabpanel" aria-labelledby="allTab" hidden>
+          <div class="section-head">
+            <div>
+              <p class="label">Channel Library</p>
+              <h2>전체 채널</h2>
+            </div>
+            <select id="regionSelect" aria-label="지역 선택"></select>
+          </div>
+
+          <div class="bulk-actions">
+            <button class="text-button" id="selectAllButton" type="button">전체 체크</button>
+            <button class="text-button danger" id="clearAllButton" type="button">전체 해제</button>
+          </div>
+
+          <div class="list" id="channelList"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
+
