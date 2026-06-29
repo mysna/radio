@@ -83,7 +83,6 @@ button {
 
 .eyebrow,
 .label,
-.channel-count,
 .status-line,
 .station-meta {
   color: var(--muted);
@@ -115,14 +114,6 @@ h2 {
   font-size: 1.18rem;
 }
 
-.channel-count {
-  flex: 0 0 auto;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  background: #f4eadc;
-  font-weight: 800;
-}
-
 .now-card {
   margin: 26px 0 16px;
   padding: 18px;
@@ -141,8 +132,7 @@ h2 {
 }
 
 audio {
-  width: 100%;
-  display: block;
+  display: none;
 }
 
 .transport {
@@ -151,12 +141,14 @@ audio {
 }
 
 .transport-button {
-  width: 56px;
+  min-width: 92px;
   height: 46px;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: white;
-  font-size: 1.1rem;
+  padding: 0 18px;
+  font-size: 1rem;
+  font-weight: 900;
 }
 
 .transport-button:disabled {
@@ -339,7 +331,6 @@ button.station-row {
     flex-direction: column;
   }
 
-  .channel-count,
   select,
   .text-button {
     width: 100%;
@@ -350,4 +341,3 @@ button.station-row {
     grid-template-columns: 1fr 1fr;
   }
 }
-

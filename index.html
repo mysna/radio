@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Radio Player</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./src/app.js"></script>
   </head>
@@ -15,7 +16,6 @@
             <p class="eyebrow">Korea Radio</p>
             <h1 id="player-title">라디오 플레이어</h1>
           </div>
-          <p class="channel-count" id="playlistCount">0 채널</p>
         </div>
 
         <div class="now-card">
@@ -24,11 +24,11 @@
           <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
         </div>
 
-        <audio id="audioPlayer" controls preload="none"></audio>
+        <audio id="audioPlayer" preload="none"></audio>
 
         <div class="transport" aria-label="재생목록 이동">
-          <button class="transport-button" id="previousButton" type="button" aria-label="이전 채널">⏮</button>
-          <button class="transport-button" id="nextButton" type="button" aria-label="다음 채널">⏭</button>
+          <button class="transport-button" id="previousButton" type="button">이전</button>
+          <button class="transport-button" id="nextButton" type="button">다음</button>
         </div>
 
         <p class="status-line" id="statusLine" role="status"></p>
@@ -46,7 +46,6 @@
               <p class="label">Saved Playlist</p>
               <h2>재생 목록</h2>
             </div>
-            <button class="text-button" id="showAllButton" type="button">채널 편집</button>
           </div>
           <div class="list" id="playlistList"></div>
         </section>
@@ -71,4 +70,3 @@
     </main>
   </body>
 </html>
-

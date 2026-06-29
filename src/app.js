@@ -16,7 +16,6 @@ const audio = document.querySelector("#audioPlayer");
 const nowTitle = document.querySelector("#nowTitle");
 const nowMeta = document.querySelector("#nowMeta");
 const statusLine = document.querySelector("#statusLine");
-const playlistCount = document.querySelector("#playlistCount");
 const playlistList = document.querySelector("#playlistList");
 const channelList = document.querySelector("#channelList");
 const regionSelect = document.querySelector("#regionSelect");
@@ -24,7 +23,6 @@ const previousButton = document.querySelector("#previousButton");
 const nextButton = document.querySelector("#nextButton");
 const selectAllButton = document.querySelector("#selectAllButton");
 const clearAllButton = document.querySelector("#clearAllButton");
-const showAllButton = document.querySelector("#showAllButton");
 const playlistTab = document.querySelector("#playlistTab");
 const allTab = document.querySelector("#allTab");
 const playlistPane = document.querySelector("#playlistPane");
@@ -76,7 +74,8 @@ function render() {
   const playlist = getPlaylist(CHANNELS, selectedIds);
   const activeChannel = getActiveChannel();
 
-  playlistCount.textContent = `${playlist.length} 채널`;
+  playlistTab.textContent = `재생 목록 (${playlist.length})`;
+  allTab.textContent = `전체 채널 (${CHANNELS.length})`;
   previousButton.disabled = playlist.length === 0;
   nextButton.disabled = playlist.length === 0;
 
@@ -215,7 +214,7 @@ function updateAudioSource(autoplay) {
     audio.play().then(() => {
       statusLine.textContent = "";
     }).catch(() => {
-      statusLine.textContent = "브라우저가 자동 재생을 막았습니다. 오디오 재생 버튼을 눌러 주세요.";
+      statusLine.textContent = "재생이 시작되지 않으면 채널을 다시 선택해 주세요.";
     });
   }
 }
@@ -227,10 +226,7 @@ function playRelative(direction) {
     return;
   }
 
-  const currentIndex = Math.max(
-    playlist.findIndex((channel) => channel.id === activeChannelId),
-    0,
-  );
+  const currentIndex = playlist.findIndex((channel) => channel.id === activeChannelId);
   const nextIndex = direction === "next"
     ? getNextIndex(currentIndex, playlist.length)
     : getPreviousIndex(currentIndex, playlist.length);
@@ -310,7 +306,6 @@ clearAllButton.addEventListener("click", () => {
 regionSelect.addEventListener("change", render);
 playlistTab.addEventListener("click", () => switchTab("playlist"));
 allTab.addEventListener("click", () => switchTab("all"));
-showAllButton.addEventListener("click", () => switchTab("all"));
 audio.addEventListener("play", () => {
   if (getActiveChannel()) {
     updateMediaSession(getActiveChannel());
