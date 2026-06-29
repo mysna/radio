@@ -141,14 +141,20 @@ audio {
 }
 
 .transport-button {
-  min-width: 92px;
+  min-width: 82px;
   height: 46px;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: white;
-  padding: 0 18px;
+  padding: 0 16px;
   font-size: 1rem;
   font-weight: 900;
+}
+
+.playback-button {
+  min-width: 104px;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .transport-button:disabled {
@@ -247,7 +253,7 @@ select {
 .station-row {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
@@ -273,16 +279,6 @@ button.station-row {
 .station-meta {
   margin-top: 3px;
   font-size: 0.86rem;
-}
-
-.station-badge {
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  background: #f4eadc;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
-  white-space: nowrap;
 }
 
 .check-row {

@@ -1,6 +1,11 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
 import { createMediaMetadata, registerRadioMediaSessionActions } from "./mediaSession.js";
 import {
+  getPlaybackButtonState,
+  getPlaybackFailureMessage,
+  shouldAutoplayRestoredChannel,
+} from "./playbackUi.js";
+import {
   buildStreamUrl,
   getNextIndex,
   getPlaylist,
@@ -21,6 +26,7 @@ const playlistList = document.querySelector("#playlistList");
 const channelList = document.querySelector("#channelList");
 const regionSelect = document.querySelector("#regionSelect");
 const previousButton = document.querySelector("#previousButton");
+const playbackButton = document.querySelector("#playbackButton");
 const nextButton = document.querySelector("#nextButton");
 const selectAllButton = document.querySelector("#selectAllButton");
 const clearAllButton = document.querySelector("#clearAllButton");
@@ -79,10 +85,22 @@ function render() {
   allTab.textContent = `전체 채널 (${CHANNELS.length})`;
   previousButton.disabled = playlist.length === 0;
   nextButton.disabled = playlist.length === 0;
+  renderPlaybackButton(playlist);
 
   renderPlaylist(playlist);
   renderChannelList();
   renderNowPlaying(activeChannel);
+}
+
+function renderPlaybackButton(playlist) {
+  const state = getPlaybackButtonState({
+    hasPlayableChannel: playlist.length > 0,
+    isPlaying: !audio.paused,
+  });
+
+  playbackButton.textContent = state.label;
+  playbackButton.disabled = state.disabled;
+  playbackButton.setAttribute("aria-label", state.ariaLabel);
 }
 
 function renderPlaylist(playlist) {
@@ -111,7 +129,6 @@ function renderPlaylist(playlist) {
         <span class="station-title"></span>
         <span class="station-meta"></span>
       </span>
-      <span class="station-badge">재생</span>
     `;
     button.querySelector(".station-title").textContent = channel.name;
     button.querySelector(".station-meta").textContent = meta;
@@ -194,7 +211,28 @@ function playChannel(channelId, autoplay) {
   render();
 }
 
-function updateAudioSource(autoplay) {
+function togglePlayback() {
+  const playlist = getPlaylist(CHANNELS, selectedIds);
+
+  if (playlist.length === 0) {
+    return;
+  }
+
+  if (!audio.paused) {
+    audio.pause();
+    return;
+  }
+
+  if (!getActiveChannel()) {
+    activeChannelId = playlist[0].id;
+    saveActiveChannel();
+  }
+
+  updateAudioSource(true);
+  render();
+}
+
+function updateAudioSource(autoplay, options = {}) {
   const channel = getActiveChannel();
 
   if (!channel) {
@@ -214,8 +252,11 @@ function updateAudioSource(autoplay) {
   if (autoplay) {
     audio.play().then(() => {
       statusLine.textContent = "";
-    }).catch(() => {
-      statusLine.textContent = "재생이 시작되지 않으면 채널을 다시 선택해 주세요.";
+    }).catch((error) => {
+      statusLine.textContent = getPlaybackFailureMessage(error, {
+        isRestoredStartup: options.isRestoredStartup === true,
+      });
+      renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
     });
   }
 }
@@ -293,6 +334,7 @@ setupRegions();
 setupMediaSessionActions();
 
 previousButton.addEventListener("click", () => playRelative("previous"));
+playbackButton.addEventListener("click", togglePlayback);
 nextButton.addEventListener("click", () => playRelative("next"));
 selectAllButton.addEventListener("click", () => {
   selectedIds = setAllSelected(CHANNELS, true);
@@ -313,14 +355,18 @@ audio.addEventListener("play", () => {
   if (getActiveChannel()) {
     updateMediaSession(getActiveChannel());
   }
+  renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("pause", () => {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = "paused";
   }
+  renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("ended", () => playRelative("next"));
 
 keepActiveChannelInPlaylist();
-updateAudioSource(false);
+updateAudioSource(shouldAutoplayRestoredChannel(activeChannelId, CHANNELS, selectedIds), {
+  isRestoredStartup: true,
+});
 render();
