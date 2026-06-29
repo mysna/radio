@@ -38,11 +38,10 @@ https://radio.bsod.kr/stream/?stn=sbs&ch=powerfm&city=busan
 1. 이 프로젝트를 GitHub 저장소에 올립니다.
 2. 저장소의 `Settings`로 이동합니다.
 3. `Pages` 메뉴를 엽니다.
-4. `Build and deployment`에서 `Deploy from a branch`를 선택합니다.
-5. 배포할 브랜치와 root 디렉터리를 선택합니다.
-6. 저장 후 GitHub Pages URL로 접속합니다.
+4. `Build and deployment`의 `Source`를 `GitHub Actions`로 선택합니다.
+5. `main` 브랜치에 커밋을 push하면 `.github/workflows/deploy-pages.yml` 워크플로가 테스트 후 GitHub Pages로 배포합니다.
 
-이 프로젝트는 별도 빌드 과정이 필요 없습니다. `index.html`, `styles.css`, `src/` 파일이 그대로 배포됩니다.
+이 프로젝트는 별도 번들 빌드 과정이 필요 없습니다. Actions 워크플로는 `index.html`, `styles.css`, `favicon.svg`, `src/` 파일만 `_site`에 복사해 배포합니다.
 
 ## 로컬 실행
 
