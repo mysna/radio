@@ -3,12 +3,14 @@ import assert from "node:assert/strict";
 
 import {
   buildStreamUrl,
+  getRegionOptions,
   getNextIndex,
   getPlaylist,
   getPreviousIndex,
   normalizeSelection,
   removeChannel,
   setAllSelected,
+  setChannelsSelected,
   toggleChannel,
 } from "../src/playerState.js";
 
@@ -64,6 +66,30 @@ test("removeChannel removes one playlist channel without mutating the original s
 test("setAllSelected selects or clears the whole catalog", () => {
   assert.deepEqual([...setAllSelected(channels, true)], channels.map((channel) => channel.id));
   assert.deepEqual([...setAllSelected(channels, false)], []);
+});
+
+test("setChannelsSelected updates only the displayed channel subset", () => {
+  const selected = new Set(["busan-knn-lovefm"]);
+  const seoulChannels = channels.filter((channel) => channel.regionId === "seoul");
+  const added = setChannelsSelected(selected, seoulChannels, true);
+  const removed = setChannelsSelected(added, seoulChannels, false);
+
+  assert.deepEqual([...selected], ["busan-knn-lovefm"]);
+  assert.deepEqual([...added], ["busan-knn-lovefm", "seoul-sbs-powerfm", "seoul-obs"]);
+  assert.deepEqual([...removed], ["busan-knn-lovefm"]);
+});
+
+test("getRegionOptions adds nationwide first and shows channel counts", () => {
+  const regions = [
+    { id: "seoul", name: "수도권" },
+    { id: "busan", name: "부산" },
+  ];
+
+  assert.deepEqual(getRegionOptions(regions, channels), [
+    { id: "all", name: "전국 (3)" },
+    { id: "seoul", name: "수도권 (2)" },
+    { id: "busan", name: "부산 (1)" },
+  ]);
 });
 
 test("getPlaylist returns channels in catalog order", () => {

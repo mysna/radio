@@ -60,3 +60,16 @@ test("playlist remove button is rendered as an icon button", () => {
   assert.match(appJs, /removeButton\.innerHTML\s*=\s*`[\s\S]*<svg[\s\S]*sr-only[\s\S]*제거/);
   assert.match(stylesCss, /\.remove-button svg\s*{/);
 });
+
+test("channel lists use headerless table rows with subtle metadata", () => {
+  assert.match(appJs, /<span class="station-title"><\/span>[\s\S]*<span class="station-meta"><\/span>/);
+  assert.doesNotMatch(appJs, /class="station-line"/);
+  assert.match(stylesCss, /\.list\s*{[\s\S]*gap:\s*0;[\s\S]*overflow:\s*hidden;/);
+  assert.match(stylesCss, /\.station-row:not\(:last-child\),\s*\.check-row:not\(:last-child\)\s*{[\s\S]*border-bottom:/);
+  assert.match(stylesCss, /\.station-meta\s*{[\s\S]*color:\s*var\(--color-muted\);[\s\S]*font-size:\s*var\(--font-size-caption\);/);
+});
+
+test("channel checkboxes use rounded custom borders", () => {
+  assert.match(stylesCss, /\.check-row input\s*{[\s\S]*appearance:\s*none;[\s\S]*border-radius:\s*7px;/);
+  assert.match(stylesCss, /\.check-row input:checked\s*{[\s\S]*background-color:\s*var\(--color-accent\);/);
+});

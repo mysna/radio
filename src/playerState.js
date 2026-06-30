@@ -43,12 +43,36 @@ export function removeChannel(selectedIds, channelId) {
   return next;
 }
 
+export function setChannelsSelected(selectedIds, channels, checked) {
+  const next = new Set(selectedIds);
+
+  channels.forEach((channel) => {
+    if (checked) {
+      next.add(channel.id);
+    } else {
+      next.delete(channel.id);
+    }
+  });
+
+  return next;
+}
+
 export function setAllSelected(channels, checked) {
   if (!checked) {
     return new Set();
   }
 
   return new Set(channels.map((channel) => channel.id));
+}
+
+export function getRegionOptions(regions, channels) {
+  return [
+    { id: "all", name: `전국 (${channels.length})` },
+    ...regions.map((region) => ({
+      id: region.id,
+      name: `${region.name} (${channels.filter((channel) => channel.regionId === region.id).length})`,
+    })),
+  ];
 }
 
 export function getPlaylist(channels, selectedIds) {

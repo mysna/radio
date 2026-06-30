@@ -10,9 +10,10 @@ import {
   getNextIndex,
   getPlaylist,
   getPreviousIndex,
+  getRegionOptions,
   normalizeSelection,
   removeChannel,
-  setAllSelected,
+  setChannelsSelected,
   toggleChannel,
 } from "./playerState.js";
 
@@ -38,6 +39,7 @@ const allPane = document.querySelector("#allPane");
 
 const PLAY_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5-11-6.5Z" /></svg>';
 const PAUSE_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>';
+const ALL_REGION_ID = "all";
 
 let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
@@ -69,11 +71,12 @@ function getActiveChannel() {
 
 function createStationText(channel) {
   const regionName = getRegionName(channel.regionId);
-  const details = [channel.name, channel.stn.toUpperCase(), regionName];
+  const meta = [channel.stn.toUpperCase(), regionName].join(" · ");
 
   return {
+    title: channel.name,
     regionName,
-    stationLine: details.join(" · "),
+    meta,
   };
 }
 
@@ -115,7 +118,7 @@ function renderPlaylist(playlist) {
   const fragment = document.createDocumentFragment();
 
   playlist.forEach((channel) => {
-    const { stationLine } = createStationText(channel);
+    const { title, meta } = createStationText(channel);
     const row = document.createElement("div");
     row.className = "station-row playlist-row";
     row.dataset.channelId = channel.id;
@@ -129,10 +132,12 @@ function renderPlaylist(playlist) {
     playButton.className = "station-main";
     playButton.innerHTML = `
       <span class="station-copy">
-        <span class="station-line"></span>
+        <span class="station-title"></span>
+        <span class="station-meta"></span>
       </span>
     `;
-    playButton.querySelector(".station-line").textContent = stationLine;
+    playButton.querySelector(".station-title").textContent = title;
+    playButton.querySelector(".station-meta").textContent = meta;
     playButton.addEventListener("click", () => playChannel(channel.id, true));
 
     const removeButton = document.createElement("button");
@@ -153,20 +158,20 @@ function renderPlaylist(playlist) {
 }
 
 function renderChannelList() {
-  const currentRegionId = regionSelect.value || REGIONS[0].id;
-  const channels = CHANNELS.filter((channel) => channel.regionId === currentRegionId);
+  const channels = getDisplayedChannels();
   const fragment = document.createDocumentFragment();
 
   channelList.textContent = "";
 
   channels.forEach((channel) => {
-    const { stationLine } = createStationText(channel);
+    const { title, meta } = createStationText(channel);
     const label = document.createElement("label");
     label.className = "check-row";
     label.innerHTML = `
       <input type="checkbox" />
       <span>
-        <span class="station-line"></span>
+        <span class="station-title"></span>
+        <span class="station-meta"></span>
       </span>
     `;
 
@@ -179,11 +184,22 @@ function renderChannelList() {
       render();
     });
 
-    label.querySelector(".station-line").textContent = stationLine;
+    label.querySelector(".station-title").textContent = title;
+    label.querySelector(".station-meta").textContent = meta;
     fragment.append(label);
   });
 
   channelList.append(fragment);
+}
+
+function getDisplayedChannels() {
+  const currentRegionId = regionSelect.value || ALL_REGION_ID;
+
+  if (currentRegionId === ALL_REGION_ID) {
+    return CHANNELS;
+  }
+
+  return CHANNELS.filter((channel) => channel.regionId === currentRegionId);
 }
 
 function renderNowPlaying(channel) {
@@ -193,9 +209,9 @@ function renderNowPlaying(channel) {
     return;
   }
 
-  const { regionName } = createStationText(channel);
+  const { meta } = createStationText(channel);
   nowTitle.textContent = channel.name;
-  nowMeta.textContent = `${channel.stn.toUpperCase()} · ${regionName}`;
+  nowMeta.textContent = meta;
 }
 
 function createEmptyState(message) {
@@ -340,7 +356,7 @@ function switchTab(tab) {
 }
 
 function setupRegions() {
-  REGIONS.forEach((region) => {
+  getRegionOptions(REGIONS, CHANNELS).forEach((region) => {
     const option = document.createElement("option");
     option.value = region.id;
     option.textContent = region.name;
@@ -355,13 +371,13 @@ previousButton.addEventListener("click", () => playRelative("previous"));
 playbackButton.addEventListener("click", togglePlayback);
 nextButton.addEventListener("click", () => playRelative("next"));
 selectAllButton.addEventListener("click", () => {
-  selectedIds = setAllSelected(CHANNELS, true);
+  selectedIds = setChannelsSelected(selectedIds, getDisplayedChannels(), true);
   saveSelection();
   keepActiveChannelInPlaylist();
   render();
 });
 clearAllButton.addEventListener("click", () => {
-  selectedIds = setAllSelected(CHANNELS, false);
+  selectedIds = setChannelsSelected(selectedIds, getDisplayedChannels(), false);
   saveSelection();
   keepActiveChannelInPlaylist();
   render();
