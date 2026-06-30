@@ -35,6 +35,12 @@ test("home screen installs have a PNG touch icon", () => {
   assert.match(deployWorkflow, /cp index\.html styles\.css favicon\.png apple-touch-icon\.png site\.webmanifest _site\//);
 });
 
+test("GitHub Pages workflow uses Node 24-compatible actions", () => {
+  assert.match(deployWorkflow, /uses: actions\/configure-pages@v6/);
+  assert.match(deployWorkflow, /uses: actions\/upload-pages-artifact@v5/);
+  assert.match(deployWorkflow, /uses: actions\/deploy-pages@v5/);
+});
+
 test("vanilla CSS defines a clear responsive design system", () => {
   assert.match(stylesCss, /--color-bg:/);
   assert.match(stylesCss, /--font-size-display:/);
