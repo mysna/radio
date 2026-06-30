@@ -253,16 +253,20 @@ select {
 .station-row {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 12px 14px;
-  text-align: left;
   color: var(--ink);
 }
 
-button.station-row {
+.station-main {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
+  padding: 12px 0 12px 14px;
+  text-align: left;
 }
 
 .station-row.is-active {
@@ -270,7 +274,18 @@ button.station-row {
   background: #e7f6f2;
 }
 
+.remove-button {
+  min-width: 58px;
+  min-height: 36px;
+  margin-right: 12px;
+  border: 1px solid rgba(173, 52, 52, 0.42);
+  background: #fff8f4;
+  color: var(--warn);
+  font-weight: 900;
+}
+
 .station-title {
+  display: block;
   min-width: 0;
   overflow-wrap: anywhere;
   font-weight: 900;
@@ -330,6 +345,20 @@ button.station-row {
   select,
   .text-button {
     width: 100%;
+  }
+
+  .station-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .station-main {
+    padding-right: 14px;
+  }
+
+  .remove-button {
+    width: calc(100% - 28px);
+    margin: 0 14px 12px;
   }
 
   .bulk-actions {

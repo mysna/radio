@@ -37,6 +37,12 @@ export function toggleChannel(selectedIds, channelId, checked) {
   return next;
 }
 
+export function removeChannel(selectedIds, channelId) {
+  const next = new Set(selectedIds);
+  next.delete(channelId);
+  return next;
+}
+
 export function setAllSelected(channels, checked) {
   if (!checked) {
     return new Set();

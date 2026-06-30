@@ -7,6 +7,7 @@ import {
   getPlaylist,
   getPreviousIndex,
   normalizeSelection,
+  removeChannel,
   setAllSelected,
   toggleChannel,
 } from "../src/playerState.js";
@@ -49,6 +50,14 @@ test("toggleChannel updates one selected channel without mutating the original s
 
   assert.deepEqual([...selected], ["seoul-sbs-powerfm"]);
   assert.deepEqual([...added], ["seoul-sbs-powerfm", "busan-knn-lovefm"]);
+  assert.deepEqual([...removed], ["busan-knn-lovefm"]);
+});
+
+test("removeChannel removes one playlist channel without mutating the original set", () => {
+  const selected = new Set(["seoul-sbs-powerfm", "busan-knn-lovefm"]);
+  const removed = removeChannel(selected, "seoul-sbs-powerfm");
+
+  assert.deepEqual([...selected], ["seoul-sbs-powerfm", "busan-knn-lovefm"]);
   assert.deepEqual([...removed], ["busan-knn-lovefm"]);
 });
 

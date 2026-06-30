@@ -11,6 +11,7 @@ import {
   getPlaylist,
   getPreviousIndex,
   normalizeSelection,
+  removeChannel,
   setAllSelected,
   toggleChannel,
 } from "./playerState.js";
@@ -115,25 +116,36 @@ function renderPlaylist(playlist) {
 
   playlist.forEach((channel) => {
     const { meta } = createStationText(channel);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "station-row";
-    button.dataset.channelId = channel.id;
+    const row = document.createElement("div");
+    row.className = "station-row playlist-row";
+    row.dataset.channelId = channel.id;
 
     if (channel.id === activeChannelId) {
-      button.classList.add("is-active");
+      row.classList.add("is-active");
     }
 
-    button.innerHTML = `
-      <span>
+    const playButton = document.createElement("button");
+    playButton.type = "button";
+    playButton.className = "station-main";
+    playButton.innerHTML = `
+      <span class="station-copy">
         <span class="station-title"></span>
         <span class="station-meta"></span>
       </span>
     `;
-    button.querySelector(".station-title").textContent = channel.name;
-    button.querySelector(".station-meta").textContent = meta;
-    button.addEventListener("click", () => playChannel(channel.id, true));
-    fragment.append(button);
+    playButton.querySelector(".station-title").textContent = channel.name;
+    playButton.querySelector(".station-meta").textContent = meta;
+    playButton.addEventListener("click", () => playChannel(channel.id, true));
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove-button";
+    removeButton.textContent = "제거";
+    removeButton.setAttribute("aria-label", `${channel.name} 제거`);
+    removeButton.addEventListener("click", () => removePlaylistChannel(channel.id));
+
+    row.append(playButton, removeButton);
+    fragment.append(row);
   });
 
   playlistList.append(fragment);
@@ -202,6 +214,13 @@ function keepActiveChannelInPlaylist() {
     saveActiveChannel();
     updateAudioSource(false);
   }
+}
+
+function removePlaylistChannel(channelId) {
+  selectedIds = removeChannel(selectedIds, channelId);
+  saveSelection();
+  keepActiveChannelInPlaylist();
+  render();
 }
 
 function playChannel(channelId, autoplay) {
