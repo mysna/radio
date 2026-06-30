@@ -19,13 +19,13 @@
             <span class="live-pill">LIVE</span>
           </header>
 
-          <section class="now-panel" aria-labelledby="now-label">
-            <p class="label" id="now-label">현재 채널</p>
+          <section class="now-panel" aria-label="현재 재생 채널">
             <h1 id="nowTitle">채널을 선택해 주세요</h1>
             <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
           </section>
 
-          <audio id="audioPlayer" preload="none"></audio>
+          <audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
+          <canvas class="audio-visualizer" id="audioVisualizer" aria-hidden="true"></canvas>
 
           <nav class="transport" aria-label="재생목록 이동">
             <button class="transport-button" id="previousButton" type="button" aria-label="이전 채널">

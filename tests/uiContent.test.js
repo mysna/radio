@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const stylesCss = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const appJs = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+const audioVisualizerJs = readFileSync(new URL("../src/audioVisualizer.js", import.meta.url), "utf8");
 const deployWorkflow = readFileSync(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
 
 test("player panel uses the Korean service title without the old heading", () => {
@@ -58,6 +59,30 @@ test("transport controls are icon buttons that stay in one row", () => {
   assert.match(indexHtml, /id="playbackButton"[\s\S]*?<svg/);
   assert.match(indexHtml, /id="nextButton"[\s\S]*?<svg/);
   assert.match(stylesCss, /\.transport\s*{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+});
+
+test("now playing panel uses an audio visualizer instead of the current-channel label", () => {
+  assert.doesNotMatch(indexHtml, />현재 채널</);
+  assert.match(indexHtml, /<section class="now-panel" aria-label="현재 재생 채널">/);
+  assert.match(indexHtml, /<canvas class="audio-visualizer" id="audioVisualizer" aria-hidden="true"><\/canvas>[\s\S]*<nav class="transport"/);
+  assert.match(stylesCss, /\.audio-visualizer\s*{[\s\S]*width:\s*100%;/);
+  assert.match(stylesCss, /\.audio-visualizer\s*{[\s\S]*height:\s*46px;/);
+  assert.match(stylesCss, /\.audio-visualizer\s*{[\s\S]*background:\s*transparent;/);
+  assert.match(stylesCss, /\.audio-visualizer\s*{[\s\S]*--visualizer-bar-color:\s*#16a34a;/);
+  assert.match(stylesCss, /\.status-line:empty\s*{[\s\S]*display:\s*none;/);
+});
+
+test("audio visualizer connects the audio element to a Web Audio analyser", () => {
+  assert.match(indexHtml, /<audio id="audioPlayer" preload="none" crossorigin="anonymous"><\/audio>/);
+  assert.match(appJs, /createAudioVisualizer\(\{[\s\S]*audio,[\s\S]*canvas:\s*audioVisualizer/);
+  assert.match(audioVisualizerJs, /createMediaElementSource\(audio\)/);
+  assert.match(audioVisualizerJs, /createAnalyser\(\)/);
+  assert.match(audioVisualizerJs, /getByteFrequencyData/);
+  assert.match(audioVisualizerJs, /requestAnimationFrame/);
+  assert.match(audioVisualizerJs, /getAnimatedFallbackLevels/);
+  assert.match(audioVisualizerJs, /const IDLE_LEVEL = 0\.05;/);
+  assert.match(audioVisualizerJs, /createCenteredLevels/);
+  assert.match(audioVisualizerJs, /getCenterEnvelope/);
 });
 
 test("compact lists keep remove actions on the right and avoid repeated section headings", () => {

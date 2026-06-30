@@ -1,4 +1,5 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
+import { createAudioVisualizer } from "./audioVisualizer.js";
 import { createMediaMetadata, registerRadioMediaSessionActions } from "./mediaSession.js";
 import {
   getPlaybackButtonState,
@@ -21,6 +22,7 @@ const STORAGE_KEY = "radio-player:selected-channel-ids";
 const ACTIVE_KEY = "radio-player:active-channel-id";
 
 const audio = document.querySelector("#audioPlayer");
+const audioVisualizer = document.querySelector("#audioVisualizer");
 const nowTitle = document.querySelector("#nowTitle");
 const nowMeta = document.querySelector("#nowMeta");
 const statusLine = document.querySelector("#statusLine");
@@ -44,6 +46,7 @@ const ALL_REGION_ID = "all";
 let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
 let activeTab = "playlist";
+const visualizer = createAudioVisualizer({ audio, canvas: audioVisualizer });
 
 function loadJson(key) {
   try {
@@ -389,12 +392,14 @@ audio.addEventListener("play", () => {
   if (getActiveChannel()) {
     updateMediaSession(getActiveChannel());
   }
+  visualizer.start();
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("pause", () => {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = "paused";
   }
+  visualizer.stop();
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("ended", () => playRelative("next"));
