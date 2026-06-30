@@ -55,7 +55,7 @@ test("channel tools stay in one row with icon buttons", () => {
   assert.match(stylesCss, /\.channel-controls\s*{[\s\S]*display:\s*flex;[\s\S]*flex-wrap:\s*nowrap;/);
   assert.match(stylesCss, /\.bulk-actions\s*{[\s\S]*margin-right:\s*auto;/);
   assert.match(stylesCss, /\.channel-controls select\s*{[\s\S]*margin-left:\s*auto;/);
-  assert.match(stylesCss, /\.bulk-actions \.text-button\s*{[\s\S]*width:\s*46px;[\s\S]*min-width:\s*46px;/);
+  assert.match(stylesCss, /\.bulk-actions \.text-button\s*{[\s\S]*width:\s*40px;[\s\S]*min-width:\s*40px;[\s\S]*height:\s*40px;[\s\S]*min-height:\s*40px;/);
   assert.doesNotMatch(stylesCss, /max-width: 560px\)[\s\S]*?\.channel-controls\s*{[\s\S]*flex-direction:\s*column/);
 });
 
