@@ -50,9 +50,12 @@ test("compact lists keep remove actions on the right and avoid repeated section 
 });
 
 test("channel tools stay in one row with icon buttons", () => {
-  assert.match(indexHtml, /class="channel-controls"[\s\S]*id="selectAllButton"[\s\S]*<svg[\s\S]*<span class="button-label">전체 체크<\/span>[\s\S]*id="clearAllButton"[\s\S]*<svg[\s\S]*<span class="button-label">전체 해제<\/span>[\s\S]*id="regionSelect"/);
+  assert.match(indexHtml, /class="channel-controls"[\s\S]*id="selectAllButton"[\s\S]*<svg[\s\S]*<span class="sr-only">전체 체크<\/span>[\s\S]*id="clearAllButton"[\s\S]*<svg[\s\S]*<span class="sr-only">전체 해제<\/span>[\s\S]*id="regionSelect"/);
+  assert.doesNotMatch(indexHtml, /class="button-label"/);
   assert.match(stylesCss, /\.channel-controls\s*{[\s\S]*display:\s*flex;[\s\S]*flex-wrap:\s*nowrap;/);
-  assert.match(stylesCss, /\.bulk-actions \.text-button\s*{[\s\S]*min-width:\s*112px;/);
+  assert.match(stylesCss, /\.bulk-actions\s*{[\s\S]*margin-right:\s*auto;/);
+  assert.match(stylesCss, /\.channel-controls select\s*{[\s\S]*margin-left:\s*auto;/);
+  assert.match(stylesCss, /\.bulk-actions \.text-button\s*{[\s\S]*width:\s*46px;[\s\S]*min-width:\s*46px;/);
   assert.doesNotMatch(stylesCss, /max-width: 560px\)[\s\S]*?\.channel-controls\s*{[\s\S]*flex-direction:\s*column/);
 });
 
