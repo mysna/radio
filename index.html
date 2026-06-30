@@ -10,58 +10,70 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="player-panel" aria-label="대한민국 라디오">
-        <div class="brand-row">
-          <div>
+      <aside class="now-playing-panel" aria-label="현재 재생">
+        <section class="player-surface">
+          <header class="brand-bar">
             <p class="eyebrow">대한민국 라디오</p>
+            <span class="live-pill">LIVE</span>
+          </header>
+
+          <section class="now-panel" aria-labelledby="now-label">
+            <p class="label" id="now-label">현재 채널</p>
+            <h1 id="nowTitle">채널을 선택해 주세요</h1>
+            <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
+          </section>
+
+          <audio id="audioPlayer" preload="none"></audio>
+
+          <nav class="transport" aria-label="재생목록 이동">
+            <button class="transport-button" id="previousButton" type="button" aria-label="이전 채널">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 5h2v14H6V5Zm3.5 7 8.5-6v12l-8.5-6Z" /></svg>
+              <span class="sr-only">이전</span>
+            </button>
+            <button class="transport-button playback-button" id="playbackButton" type="button" aria-label="재생">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5-11-6.5Z" /></svg>
+              <span class="sr-only">재생</span>
+            </button>
+            <button class="transport-button" id="nextButton" type="button" aria-label="다음 채널">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5ZM6 6l8.5 6L6 18V6Z" /></svg>
+              <span class="sr-only">다음</span>
+            </button>
+          </nav>
+
+          <p class="status-line" id="statusLine" role="status"></p>
+        </section>
+      </aside>
+
+      <section class="library-panel" aria-labelledby="library-title">
+        <header class="library-header">
+          <div>
+            <p class="eyebrow">Station Library</p>
+            <h2 id="library-title">내 라디오 보드</h2>
           </div>
-        </div>
 
-        <div class="now-card">
-          <p class="label">현재 채널</p>
-          <h2 id="nowTitle">채널을 선택해 주세요</h2>
-          <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
-        </div>
-
-        <audio id="audioPlayer" preload="none"></audio>
-
-        <div class="transport" aria-label="재생목록 이동">
-          <button class="transport-button" id="previousButton" type="button">이전</button>
-          <button class="transport-button playback-button" id="playbackButton" type="button">재생</button>
-          <button class="transport-button" id="nextButton" type="button">다음</button>
-        </div>
-
-        <p class="status-line" id="statusLine" role="status"></p>
-      </section>
-
-      <section class="library-panel">
-        <div class="tabs" role="tablist" aria-label="채널 보기">
-          <button class="tab is-active" id="playlistTab" type="button" role="tab" aria-selected="true" aria-controls="playlistPane">재생 목록</button>
-          <button class="tab" id="allTab" type="button" role="tab" aria-selected="false" aria-controls="allPane">전체 채널</button>
-        </div>
-
-        <section class="tab-pane is-active" id="playlistPane" role="tabpanel" aria-labelledby="playlistTab">
-          <div class="section-head">
-            <div>
-              <p class="label">Saved Playlist</p>
-              <h2>재생 목록</h2>
-            </div>
+          <div class="tabs" role="tablist" aria-label="채널 보기">
+            <button class="tab is-active" id="playlistTab" type="button" role="tab" aria-selected="true" aria-controls="playlistPane">재생 목록</button>
+            <button class="tab" id="allTab" type="button" role="tab" aria-selected="false" aria-controls="allPane">전체 채널</button>
           </div>
+        </header>
+
+        <section class="tab-pane" id="playlistPane" role="tabpanel" aria-labelledby="playlistTab">
           <div class="list" id="playlistList"></div>
         </section>
 
         <section class="tab-pane" id="allPane" role="tabpanel" aria-labelledby="allTab" hidden>
-          <div class="section-head">
-            <div>
-              <p class="label">Channel Library</p>
-              <h2>전체 채널</h2>
+          <div class="channel-controls">
+            <div class="bulk-actions">
+              <button class="text-button" id="selectAllButton" type="button" aria-label="전체 체크">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v12h12V6H6Zm5.1 9.2-3.4-3.4 1.4-1.4 2 2 4.2-4.2 1.4 1.4-5.6 5.6Z" /></svg>
+                <span class="button-label">전체 체크</span>
+              </button>
+              <button class="text-button danger" id="clearAllButton" type="button" aria-label="전체 해제">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v12h12V6H6Zm3.4 3L12 11.6 14.6 9 16 10.4 13.4 13l2.6 2.6-1.4 1.4-2.6-2.6L9.4 17 8 15.6l2.6-2.6L8 10.4 9.4 9Z" /></svg>
+                <span class="button-label">전체 해제</span>
+              </button>
             </div>
             <select id="regionSelect" aria-label="지역 선택"></select>
-          </div>
-
-          <div class="bulk-actions">
-            <button class="text-button" id="selectAllButton" type="button">전체 체크</button>
-            <button class="text-button danger" id="clearAllButton" type="button">전체 해제</button>
           </div>
 
           <div class="list" id="channelList"></div>

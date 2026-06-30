@@ -36,6 +36,9 @@ const allTab = document.querySelector("#allTab");
 const playlistPane = document.querySelector("#playlistPane");
 const allPane = document.querySelector("#allPane");
 
+const PLAY_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5-11-6.5Z" /></svg>';
+const PAUSE_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>';
+
 let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
 let activeTab = "playlist";
@@ -66,15 +69,11 @@ function getActiveChannel() {
 
 function createStationText(channel) {
   const regionName = getRegionName(channel.regionId);
-  const details = [regionName, channel.stn.toUpperCase()];
-
-  if (channel.city) {
-    details.push(channel.city);
-  }
+  const details = [channel.name, channel.stn.toUpperCase(), regionName];
 
   return {
     regionName,
-    meta: details.join(" · "),
+    stationLine: details.join(" · "),
   };
 }
 
@@ -99,7 +98,8 @@ function renderPlaybackButton(playlist) {
     isPlaying: !audio.paused,
   });
 
-  playbackButton.textContent = state.label;
+  const icon = state.label === "정지" ? PAUSE_ICON : PLAY_ICON;
+  playbackButton.innerHTML = `${icon}<span class="sr-only">${state.label}</span>`;
   playbackButton.disabled = state.disabled;
   playbackButton.setAttribute("aria-label", state.ariaLabel);
 }
@@ -115,7 +115,7 @@ function renderPlaylist(playlist) {
   const fragment = document.createDocumentFragment();
 
   playlist.forEach((channel) => {
-    const { meta } = createStationText(channel);
+    const { stationLine } = createStationText(channel);
     const row = document.createElement("div");
     row.className = "station-row playlist-row";
     row.dataset.channelId = channel.id;
@@ -129,18 +129,19 @@ function renderPlaylist(playlist) {
     playButton.className = "station-main";
     playButton.innerHTML = `
       <span class="station-copy">
-        <span class="station-title"></span>
-        <span class="station-meta"></span>
+        <span class="station-line"></span>
       </span>
     `;
-    playButton.querySelector(".station-title").textContent = channel.name;
-    playButton.querySelector(".station-meta").textContent = meta;
+    playButton.querySelector(".station-line").textContent = stationLine;
     playButton.addEventListener("click", () => playChannel(channel.id, true));
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
     removeButton.className = "remove-button";
-    removeButton.textContent = "제거";
+    removeButton.innerHTML = `
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v7h-2v-7Zm4 0h2v7h-2v-7ZM7 9h10l-.7 11H7.7L7 9Z" /></svg>
+      <span class="sr-only">제거</span>
+    `;
     removeButton.setAttribute("aria-label", `${channel.name} 제거`);
     removeButton.addEventListener("click", () => removePlaylistChannel(channel.id));
 
@@ -159,14 +160,13 @@ function renderChannelList() {
   channelList.textContent = "";
 
   channels.forEach((channel) => {
-    const { meta } = createStationText(channel);
+    const { stationLine } = createStationText(channel);
     const label = document.createElement("label");
     label.className = "check-row";
     label.innerHTML = `
       <input type="checkbox" />
       <span>
-        <span class="station-title"></span>
-        <span class="station-meta"></span>
+        <span class="station-line"></span>
       </span>
     `;
 
@@ -179,8 +179,7 @@ function renderChannelList() {
       render();
     });
 
-    label.querySelector(".station-title").textContent = channel.name;
-    label.querySelector(".station-meta").textContent = meta;
+    label.querySelector(".station-line").textContent = stationLine;
     fragment.append(label);
   });
 
@@ -194,9 +193,9 @@ function renderNowPlaying(channel) {
     return;
   }
 
-  const { meta } = createStationText(channel);
+  const { regionName } = createStationText(channel);
   nowTitle.textContent = channel.name;
-  nowMeta.textContent = meta;
+  nowMeta.textContent = `${channel.stn.toUpperCase()} · ${regionName}`;
 }
 
 function createEmptyState(message) {
