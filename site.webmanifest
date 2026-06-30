@@ -1,0 +1,15 @@
+{
+  "name": "라디오",
+  "short_name": "라디오",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3dfb8",
+  "theme_color": "#e85d2a",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

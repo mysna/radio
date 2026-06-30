@@ -37,7 +37,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site
-          cp index.html styles.css favicon.svg _site/
+          cp index.html styles.css favicon.png apple-touch-icon.png site.webmanifest _site/
           cp -R src _site/src
 
       - name: Upload artifact

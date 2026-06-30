@@ -41,7 +41,7 @@ https://radio.bsod.kr/stream/?stn=sbs&ch=powerfm&city=busan
 4. `Build and deployment`의 `Source`를 `GitHub Actions`로 선택합니다.
 5. `main` 브랜치에 커밋을 push하면 `.github/workflows/deploy-pages.yml` 워크플로가 테스트 후 GitHub Pages로 배포합니다.
 
-이 프로젝트는 별도 번들 빌드 과정이 필요 없습니다. Actions 워크플로는 `index.html`, `styles.css`, `favicon.svg`, `src/` 파일만 `_site`에 복사해 배포합니다.
+이 프로젝트는 별도 번들 빌드 과정이 필요 없습니다. Actions 워크플로는 `index.html`, `styles.css`, `favicon.png`, `apple-touch-icon.png`, `site.webmanifest`, `src/` 파일만 `_site`에 복사해 배포합니다.
 
 ## 로컬 실행
 

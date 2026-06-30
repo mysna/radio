@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const stylesCss = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const appJs = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+const deployWorkflow = readFileSync(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
 
 test("player panel uses the Korean service title without the old heading", () => {
   assert.match(indexHtml, />대한민국 라디오</);
@@ -21,6 +22,17 @@ test("layout uses semantic music-player regions with responsive utility classes"
 test("page keeps styling local without a third-party runtime script", () => {
   assert.doesNotMatch(indexHtml, /cdn\.tailwindcss\.com/);
   assert.doesNotMatch(indexHtml, /<script[^>]+src="https?:\/\//);
+});
+
+test("home screen installs have a PNG touch icon", () => {
+  assert.match(indexHtml, /<link rel="icon" type="image\/png" sizes="64x64" href="\.\/favicon\.png" \/>/);
+  assert.doesNotMatch(indexHtml, /<link rel="icon" type="image\/svg\+xml"/);
+  assert.match(indexHtml, /<link rel="apple-touch-icon" sizes="180x180" href="\.\/apple-touch-icon\.png" \/>/);
+  assert.match(indexHtml, /<link rel="manifest" href="\.\/site\.webmanifest" \/>/);
+  assert.ok(existsSync(new URL("../favicon.png", import.meta.url)));
+  assert.ok(existsSync(new URL("../apple-touch-icon.png", import.meta.url)));
+  assert.ok(existsSync(new URL("../site.webmanifest", import.meta.url)));
+  assert.match(deployWorkflow, /cp index\.html styles\.css favicon\.png apple-touch-icon\.png site\.webmanifest _site\//);
 });
 
 test("vanilla CSS defines a clear responsive design system", () => {
