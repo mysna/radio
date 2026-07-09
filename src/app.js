@@ -1,5 +1,4 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
-import { createAudioVisualizer } from "./audioVisualizer.js";
 import { createMediaMetadata, registerRadioMediaSessionActions } from "./mediaSession.js";
 import {
   getPlaybackButtonState,
@@ -22,7 +21,6 @@ const STORAGE_KEY = "radio-player:selected-channel-ids";
 const ACTIVE_KEY = "radio-player:active-channel-id";
 
 const audio = document.querySelector("#audioPlayer");
-const audioVisualizer = document.querySelector("#audioVisualizer");
 const nowTitle = document.querySelector("#nowTitle");
 const nowMeta = document.querySelector("#nowMeta");
 const statusLine = document.querySelector("#statusLine");
@@ -46,7 +44,6 @@ const ALL_REGION_ID = "all";
 let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
 let activeTab = "playlist";
-const visualizer = createAudioVisualizer({ audio, canvas: audioVisualizer });
 
 function loadJson(key) {
   try {
@@ -141,7 +138,7 @@ function renderPlaylist(playlist) {
     `;
     playButton.querySelector(".station-title").textContent = title;
     playButton.querySelector(".station-meta").textContent = meta;
-    playButton.addEventListener("click", () => beginUserPlayback(() => playChannel(channel.id, true)));
+    playButton.addEventListener("click", () => playChannel(channel.id, true));
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
@@ -239,11 +236,6 @@ function removePlaylistChannel(channelId) {
   saveSelection();
   keepActiveChannelInPlaylist();
   render();
-}
-
-function beginUserPlayback(playbackAction) {
-  visualizer.resume();
-  playbackAction();
 }
 
 function playChannel(channelId, autoplay) {
@@ -375,9 +367,9 @@ function setupRegions() {
 setupRegions();
 setupMediaSessionActions();
 
-previousButton.addEventListener("click", () => beginUserPlayback(() => playRelative("previous")));
-playbackButton.addEventListener("click", () => beginUserPlayback(togglePlayback));
-nextButton.addEventListener("click", () => beginUserPlayback(() => playRelative("next")));
+previousButton.addEventListener("click", () => playRelative("previous"));
+playbackButton.addEventListener("click", togglePlayback);
+nextButton.addEventListener("click", () => playRelative("next"));
 selectAllButton.addEventListener("click", () => {
   selectedIds = setChannelsSelected(selectedIds, getDisplayedChannels(), true);
   saveSelection();
@@ -397,14 +389,12 @@ audio.addEventListener("play", () => {
   if (getActiveChannel()) {
     updateMediaSession(getActiveChannel());
   }
-  visualizer.start();
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("pause", () => {
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = "paused";
   }
-  visualizer.stop();
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("ended", () => playRelative("next"));
