@@ -34,17 +34,24 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
     } catch {
       state.analyser = null;
       state.data = null;
+      state.mediaSource = null;
+      state.audioContext = null;
     }
+  }
+
+  function resume() {
+    setupAudioGraph();
+
+    if (state.audioContext?.state === "suspended") {
+      return state.audioContext.resume().catch(() => {});
+    }
+
+    return Promise.resolve();
   }
 
   function start() {
     state.isRunning = true;
-    setupAudioGraph();
-
-    if (state.audioContext?.state === "suspended") {
-      state.audioContext.resume().catch(() => {});
-    }
-
+    resume();
     draw();
   }
 
@@ -107,7 +114,7 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
 
   drawIdle();
 
-  return { start, stop };
+  return { start, stop, resume };
 }
 
 function resizeCanvas(canvas, windowRef) {

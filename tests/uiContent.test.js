@@ -85,6 +85,14 @@ test("audio visualizer connects the audio element to a Web Audio analyser", () =
   assert.match(audioVisualizerJs, /getCenterEnvelope/);
 });
 
+test("playback gestures resume the audio visualizer before requesting playback", () => {
+  assert.match(appJs, /function beginUserPlayback\(playbackAction\)\s*{[\s\S]*visualizer\.resume\(\);[\s\S]*playbackAction\(\);[\s\S]*}/);
+  assert.match(appJs, /playButton\.addEventListener\("click", \(\) => beginUserPlayback\(\(\) => playChannel\(channel\.id, true\)\)\)/);
+  assert.match(appJs, /previousButton\.addEventListener\("click", \(\) => beginUserPlayback\(\(\) => playRelative\("previous"\)\)\)/);
+  assert.match(appJs, /playbackButton\.addEventListener\("click", \(\) => beginUserPlayback\(togglePlayback\)\)/);
+  assert.match(appJs, /nextButton\.addEventListener\("click", \(\) => beginUserPlayback\(\(\) => playRelative\("next"\)\)\)/);
+});
+
 test("compact lists keep remove actions on the right and avoid repeated section headings", () => {
   assert.doesNotMatch(stylesCss, /max-width: 560px\)[\s\S]*?\.station-row\s*{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*;/);
   assert.match(stylesCss, /\.station-row\s*{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/);

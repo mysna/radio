@@ -141,7 +141,7 @@ function renderPlaylist(playlist) {
     `;
     playButton.querySelector(".station-title").textContent = title;
     playButton.querySelector(".station-meta").textContent = meta;
-    playButton.addEventListener("click", () => playChannel(channel.id, true));
+    playButton.addEventListener("click", () => beginUserPlayback(() => playChannel(channel.id, true)));
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
@@ -239,6 +239,11 @@ function removePlaylistChannel(channelId) {
   saveSelection();
   keepActiveChannelInPlaylist();
   render();
+}
+
+function beginUserPlayback(playbackAction) {
+  visualizer.resume();
+  playbackAction();
 }
 
 function playChannel(channelId, autoplay) {
@@ -370,9 +375,9 @@ function setupRegions() {
 setupRegions();
 setupMediaSessionActions();
 
-previousButton.addEventListener("click", () => playRelative("previous"));
-playbackButton.addEventListener("click", togglePlayback);
-nextButton.addEventListener("click", () => playRelative("next"));
+previousButton.addEventListener("click", () => beginUserPlayback(() => playRelative("previous")));
+playbackButton.addEventListener("click", () => beginUserPlayback(togglePlayback));
+nextButton.addEventListener("click", () => beginUserPlayback(() => playRelative("next")));
 selectAllButton.addEventListener("click", () => {
   selectedIds = setChannelsSelected(selectedIds, getDisplayedChannels(), true);
   saveSelection();
