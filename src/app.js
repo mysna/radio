@@ -1,5 +1,9 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
-import { createMediaMetadata, registerRadioMediaSessionActions } from "./mediaSession.js";
+import {
+  createMediaMetadata,
+  registerRadioMediaSessionActions,
+  setLiveMediaSessionPosition,
+} from "./mediaSession.js";
 import {
   getPlaybackButtonState,
   getPlaybackFailureMessage,
@@ -325,6 +329,8 @@ function updateMediaSession(channel) {
     artist: getRegionName(channel.regionId),
     album: "Radio",
   });
+  setLiveMediaSessionPosition(navigator.mediaSession);
+  setupMediaSessionActions();
   navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
 }
 

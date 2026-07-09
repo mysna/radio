@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   registerRadioMediaSessionActions,
+  setLiveMediaSessionPosition,
   setMediaSessionActionHandler,
 } from "../src/mediaSession.js";
 
@@ -56,4 +57,33 @@ test("registerRadioMediaSessionActions maps seek controls to station navigation"
     ["play", handlers.play],
     ["pause", handlers.pause],
   ]);
+});
+
+test("setLiveMediaSessionPosition marks radio streams as live media", () => {
+  const calls = [];
+  const mediaSession = {
+    setPositionState(state) {
+      calls.push(state);
+    },
+  };
+
+  setLiveMediaSessionPosition(mediaSession);
+
+  assert.deepEqual(calls, [{
+    duration: Infinity,
+    playbackRate: 1,
+    position: 0,
+  }]);
+});
+
+test("setLiveMediaSessionPosition ignores unsupported browser position state", () => {
+  const mediaSession = {
+    setPositionState() {
+      throw new TypeError("unsupported position state");
+    },
+  };
+
+  assert.doesNotThrow(() => {
+    setLiveMediaSessionPosition(mediaSession);
+  });
 });
