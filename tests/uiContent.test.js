@@ -80,6 +80,9 @@ test("audio visualizer connects the audio element to a Web Audio analyser", () =
   assert.match(audioVisualizerJs, /getByteFrequencyData/);
   assert.match(audioVisualizerJs, /requestAnimationFrame/);
   assert.match(audioVisualizerJs, /getAnimatedFallbackLevels/);
+  assert.match(audioVisualizerJs, /parseHlsSegments/);
+  assert.match(audioVisualizerJs, /decodeAudioData/);
+  assert.match(audioVisualizerJs, /createVisualizerFramesFromAudioBuffer/);
   assert.match(audioVisualizerJs, /const IDLE_LEVEL = 0\.05;/);
   assert.match(audioVisualizerJs, /createCenteredLevels/);
   assert.match(audioVisualizerJs, /getCenterEnvelope/);

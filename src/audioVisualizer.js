@@ -2,6 +2,12 @@ const BAR_COUNT = 56;
 const BAR_GAP = 4;
 const MIN_BAR_HEIGHT = 3;
 const IDLE_LEVEL = 0.05;
+const HLS_FALLBACK_DELAY = 1000;
+const HLS_FETCH_INTERVAL = 4000;
+const HLS_FRAME_INTERVAL = 80;
+const HLS_FRAME_RATE = 12;
+const HLS_ANALYSIS_WINDOW_SECONDS = 0.18;
+const MAX_HLS_FRAMES = 180;
 const IDLE_LEVELS = Array.from({ length: BAR_COUNT }, () => IDLE_LEVEL);
 
 export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
@@ -14,6 +20,7 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
     audioContext: null,
     isRunning: false,
     lastLiveSampleAt: 0,
+    hlsFallback: createHlsFallbackState(),
   };
 
   function setupAudioGraph() {
@@ -35,7 +42,6 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
       state.analyser = null;
       state.data = null;
       state.mediaSource = null;
-      state.audioContext = null;
     }
   }
 
@@ -76,7 +82,12 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
 
   function getLevels() {
     if (!state.analyser || !state.data || audio.paused) {
-      return audio.paused ? IDLE_LEVELS : getAnimatedFallbackLevels(windowRef.performance.now());
+      if (audio.paused) {
+        return IDLE_LEVELS;
+      }
+
+      const now = windowRef.performance.now();
+      return getHlsFallbackLevels(now) || getAnimatedFallbackLevels(now);
     }
 
     state.analyser.getByteFrequencyData(state.data);
@@ -102,9 +113,83 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
       return levels;
     }
 
-    return windowRef.performance.now() - state.lastLiveSampleAt > 1000
-      ? getAnimatedFallbackLevels(windowRef.performance.now())
+    const now = windowRef.performance.now();
+    const hlsLevels = now - state.lastLiveSampleAt > HLS_FALLBACK_DELAY
+      ? getHlsFallbackLevels(now)
+      : null;
+
+    if (hlsLevels) {
+      return hlsLevels;
+    }
+
+    return now - state.lastLiveSampleAt > HLS_FALLBACK_DELAY
+      ? getAnimatedFallbackLevels(now)
       : levels;
+  }
+
+  function getHlsFallbackLevels(now) {
+    queueHlsFallbackUpdate(now);
+
+    if (state.hlsFallback.frames.length === 0) {
+      return null;
+    }
+
+    if (now - state.hlsFallback.lastFrameAt >= HLS_FRAME_INTERVAL) {
+      state.hlsFallback.lastFrameAt = now;
+      state.hlsFallback.frameIndex = (state.hlsFallback.frameIndex + 1) % state.hlsFallback.frames.length;
+    }
+
+    return state.hlsFallback.frames[state.hlsFallback.frameIndex] || null;
+  }
+
+  function queueHlsFallbackUpdate(now) {
+    const sourceUrl = audio.currentSrc || audio.src;
+
+    if (!sourceUrl || !windowRef.fetch || !state.audioContext?.decodeAudioData) {
+      return;
+    }
+
+    if (state.hlsFallback.sourceUrl !== sourceUrl) {
+      state.hlsFallback = createHlsFallbackState(sourceUrl);
+    }
+
+    if (
+      state.hlsFallback.isFetching
+      || now - state.hlsFallback.lastFetchAt < HLS_FETCH_INTERVAL
+    ) {
+      return;
+    }
+
+    state.hlsFallback.isFetching = true;
+    state.hlsFallback.lastFetchAt = now;
+
+    windowRef.fetch(sourceUrl, { cache: "no-store" })
+      .then((response) => Promise.all([response.text(), Promise.resolve(response.url || sourceUrl)]))
+      .then(([playlist, playlistUrl]) => fetchAndDecodeLatestSegments(playlist, playlistUrl))
+      .catch(() => {})
+      .finally(() => {
+        state.hlsFallback.isFetching = false;
+      });
+  }
+
+  function fetchAndDecodeLatestSegments(playlist, playlistUrl) {
+    const segments = parseHlsSegments(playlist, playlistUrl)
+      .filter((segment) => !state.hlsFallback.segmentUrls.has(segment.url))
+      .slice(-2);
+
+    segments.forEach((segment) => {
+      state.hlsFallback.segmentUrls.add(segment.url);
+      windowRef.fetch(segment.url, { cache: "force-cache" })
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) => state.audioContext.decodeAudioData(arrayBuffer.slice(0)))
+        .then((audioBuffer) => {
+          state.hlsFallback.frames.push(...createVisualizerFramesFromAudioBuffer(audioBuffer));
+          if (state.hlsFallback.frames.length > MAX_HLS_FRAMES) {
+            state.hlsFallback.frames.splice(0, state.hlsFallback.frames.length - MAX_HLS_FRAMES);
+          }
+        })
+        .catch(() => {});
+    });
   }
 
   function drawIdle() {
@@ -115,6 +200,73 @@ export function createAudioVisualizer({ audio, canvas, windowRef = window }) {
   drawIdle();
 
   return { start, stop, resume };
+}
+
+function createHlsFallbackState(sourceUrl = "") {
+  return {
+    frameIndex: 0,
+    frames: [],
+    isFetching: false,
+    lastFetchAt: -HLS_FETCH_INTERVAL,
+    lastFrameAt: 0,
+    segmentUrls: new Set(),
+    sourceUrl,
+  };
+}
+
+export function parseHlsSegments(playlist, playlistUrl) {
+  const segments = [];
+  let duration = 0;
+
+  playlist.split(/\r?\n/).forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      return;
+    }
+
+    if (trimmedLine.startsWith("#EXTINF:")) {
+      duration = Number.parseFloat(trimmedLine.slice("#EXTINF:".length)) || 0;
+      return;
+    }
+
+    if (!trimmedLine.startsWith("#")) {
+      segments.push({
+        duration,
+        url: new URL(trimmedLine, playlistUrl).href,
+      });
+      duration = 0;
+    }
+  });
+
+  return segments;
+}
+
+export function createVisualizerFramesFromAudioBuffer(audioBuffer) {
+  const samples = audioBuffer.getChannelData(0);
+  const sampleRate = audioBuffer.sampleRate || 44100;
+  const frameCount = Math.max(1, Math.floor(audioBuffer.duration * HLS_FRAME_RATE));
+  const windowSize = Math.max(BAR_COUNT, Math.floor(sampleRate * HLS_ANALYSIS_WINDOW_SECONDS));
+
+  return Array.from({ length: frameCount }, (_, frameIndex) => {
+    const center = Math.floor(samples.length * frameIndex / frameCount);
+    const start = Math.max(0, center - Math.floor(windowSize / 2));
+    const bucketSize = Math.max(1, Math.floor(windowSize / BAR_COUNT));
+
+    return createCenteredLevels(Array.from({ length: BAR_COUNT }, (_, barIndex) => {
+      const bucketStart = start + barIndex * bucketSize;
+      const bucketEnd = Math.min(samples.length, bucketStart + bucketSize);
+      let total = 0;
+      let count = 0;
+
+      for (let index = bucketStart; index < bucketEnd; index += 1) {
+        total += samples[index] ** 2;
+        count += 1;
+      }
+
+      return count > 0 ? Math.min(1, Math.sqrt(total / count) * 2.6) : 0;
+    }));
+  });
 }
 
 function resizeCanvas(canvas, windowRef) {
