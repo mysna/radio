@@ -31,6 +31,7 @@ const nowTitle = document.querySelector("#nowTitle");
 const nowMeta = document.querySelector("#nowMeta");
 const nowProgram = document.querySelector("#nowProgram");
 const programArtwork = document.querySelector("#programArtwork");
+const programArtworkWrap = document.querySelector(".program-artwork-wrap");
 const programProgressWrap = document.querySelector("#programProgressWrap");
 const programProgress = document.querySelector("#programProgress");
 const programTime = document.querySelector("#programTime");
@@ -229,6 +230,7 @@ function renderNowPlaying(channel) {
     nowMeta.textContent = "재생 목록에서 채널을 선택하면 재생됩니다.";
     nowProgram.hidden = true;
     programArtwork.hidden = true;
+    programArtworkWrap.classList.remove("has-artwork");
     programProgressWrap.hidden = true;
     return;
   }
@@ -240,6 +242,7 @@ function renderNowPlaying(channel) {
   nowProgram.textContent = program?.title || "편성 정보 없음";
   nowProgram.hidden = !program;
   programArtwork.hidden = !program?.programImageUrl;
+  programArtworkWrap.classList.toggle("has-artwork", Boolean(program?.programImageUrl));
   programArtwork.src = program?.programImageUrl || "";
   programArtwork.alt = program?.title ? `${program.title} 프로그램 이미지` : "";
   programProgressWrap.hidden = !program;

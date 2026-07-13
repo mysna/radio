@@ -179,12 +179,12 @@ h3 {
 
 .now-content { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
 .program-artwork-wrap { width: 0; overflow: hidden; transition: width 160ms ease; }
-.program-artwork-wrap:has(.program-artwork:not([hidden])) { width: 88px; }
+.program-artwork-wrap.has-artwork { width: 88px; }
 .program-artwork { display: block; width: 88px; height: 88px; object-fit: cover; border-radius: 14px; }
 .now-copy { min-width: 0; }
 .now-program { margin: 0 0 6px; font-size: 1.1rem; font-weight: 800; }
 .program-progress { margin-top: 18px; }
-.program-progress progress { width: 100%; height: 6px; accent-color: var(--color-accent); }
+.program-progress progress { width: 100%; height: 12px; accent-color: var(--color-accent); }
 .program-time { display: block; margin-top: 6px; color: var(--color-muted); font-size: var(--font-size-caption); }
 
 audio {
