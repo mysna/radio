@@ -53,6 +53,12 @@ test("current channel panel does not include the decorative Clear Signal block",
   assert.doesNotMatch(indexHtml, /class="signal-art/);
 });
 
+test("current player includes EPG artwork and progress hooks", () => {
+  assert.match(indexHtml, /id="programArtwork"/);
+  assert.match(indexHtml, /id="programProgress"/);
+  assert.match(indexHtml, /id="nowProgram"/);
+});
+
 test("transport controls are icon buttons that stay in one row", () => {
   assert.match(indexHtml, /id="previousButton"[\s\S]*?<svg/);
   assert.match(indexHtml, /id="playbackButton"[\s\S]*?<svg/);

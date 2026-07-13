@@ -1,9 +1,11 @@
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
 import {
   createMediaMetadata,
+  createRadioMetadata,
   registerRadioMediaSessionActions,
   setLiveMediaSessionPosition,
 } from "./mediaSession.js";
+import { fetchCurrentPrograms, nextRefreshDelay, progressAt } from "./epg.js";
 import {
   getPlaybackButtonState,
   getPlaybackFailureMessage,
@@ -27,6 +29,11 @@ const ACTIVE_KEY = "radio-player:active-channel-id";
 const audio = document.querySelector("#audioPlayer");
 const nowTitle = document.querySelector("#nowTitle");
 const nowMeta = document.querySelector("#nowMeta");
+const nowProgram = document.querySelector("#nowProgram");
+const programArtwork = document.querySelector("#programArtwork");
+const programProgressWrap = document.querySelector("#programProgressWrap");
+const programProgress = document.querySelector("#programProgress");
+const programTime = document.querySelector("#programTime");
 const statusLine = document.querySelector("#statusLine");
 const playlistList = document.querySelector("#playlistList");
 const channelList = document.querySelector("#channelList");
@@ -48,6 +55,9 @@ const ALL_REGION_ID = "all";
 let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
 let activeTab = "playlist";
+let currentPrograms = new Map();
+let epgTimer;
+let epgRequestId = 0;
 
 function loadJson(key) {
   try {
@@ -99,6 +109,10 @@ function render() {
   renderNowPlaying(activeChannel);
 }
 
+function currentProgram(channel) {
+  return channel ? currentPrograms.get(channel.id) || null : null;
+}
+
 function renderPlaybackButton(playlist) {
   const state = getPlaybackButtonState({
     hasPlayableChannel: playlist.length > 0,
@@ -123,6 +137,7 @@ function renderPlaylist(playlist) {
 
   playlist.forEach((channel) => {
     const { title, meta } = createStationText(channel);
+    const program = currentProgram(channel);
     const row = document.createElement("div");
     row.className = "station-row playlist-row";
     row.dataset.channelId = channel.id;
@@ -138,10 +153,12 @@ function renderPlaylist(playlist) {
       <span class="station-copy">
         <span class="station-title"></span>
         <span class="station-meta"></span>
+        <span class="station-program"></span>
       </span>
     `;
     playButton.querySelector(".station-title").textContent = title;
     playButton.querySelector(".station-meta").textContent = meta;
+    playButton.querySelector(".station-program").textContent = program?.title || "편성 정보 없음";
     playButton.addEventListener("click", () => playChannel(channel.id, true));
 
     const removeButton = document.createElement("button");
@@ -210,12 +227,57 @@ function renderNowPlaying(channel) {
   if (!channel) {
     nowTitle.textContent = "채널을 선택해 주세요";
     nowMeta.textContent = "재생 목록에서 채널을 선택하면 재생됩니다.";
+    nowProgram.hidden = true;
+    programArtwork.hidden = true;
+    programProgressWrap.hidden = true;
     return;
   }
 
   const { meta } = createStationText(channel);
   nowTitle.textContent = channel.name;
   nowMeta.textContent = meta;
+  const program = currentProgram(channel);
+  nowProgram.textContent = program?.title || "편성 정보 없음";
+  nowProgram.hidden = !program;
+  programArtwork.hidden = !program?.programImageUrl;
+  programArtwork.src = program?.programImageUrl || "";
+  programArtwork.alt = program?.title ? `${program.title} 프로그램 이미지` : "";
+  programProgressWrap.hidden = !program;
+  updateProgramProgress(program);
+}
+
+function formatProgramTime(date) {
+  return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function updateProgramProgress(program) {
+  if (!program) return;
+  const now = new Date();
+  programProgress.value = progressAt(program, now);
+  programTime.textContent = `${formatProgramTime(program.startsAt)}–${formatProgramTime(program.endsAt)}`;
+}
+
+function scheduleEpgRefresh() {
+  clearTimeout(epgTimer);
+  const program = currentProgram(getActiveChannel());
+  epgTimer = setTimeout(() => refreshEpg(), nextRefreshDelay(program));
+}
+
+async function refreshEpg() {
+  const playlist = getPlaylist(CHANNELS, selectedIds);
+  const requestId = ++epgRequestId;
+  try {
+    currentPrograms = await fetchCurrentPrograms(playlist.map((channel) => channel.id));
+    if (requestId !== epgRequestId) return;
+    render();
+    updateMediaSession(getActiveChannel());
+  } catch {
+    if (requestId === epgRequestId) {
+      currentPrograms = new Map();
+      render();
+    }
+  }
+  scheduleEpgRefresh();
 }
 
 function createEmptyState(message) {
@@ -247,6 +309,7 @@ function playChannel(channelId, autoplay) {
   saveActiveChannel();
   updateAudioSource(autoplay);
   render();
+  refreshEpg();
 }
 
 function togglePlayback() {
@@ -324,11 +387,11 @@ function updateMediaSession(channel) {
     return;
   }
 
-  navigator.mediaSession.metadata = createMediaMetadata({
-    title: channel.name,
-    artist: getRegionName(channel.regionId),
-    album: "Radio",
-  });
+  navigator.mediaSession.metadata = createMediaMetadata(createRadioMetadata({
+    channelName: channel.name,
+    regionName: getRegionName(channel.regionId),
+    program: currentProgram(channel),
+  }));
   setLiveMediaSessionPosition(navigator.mediaSession);
   setupMediaSessionActions();
   navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
@@ -372,6 +435,11 @@ function setupRegions() {
 
 setupRegions();
 setupMediaSessionActions();
+refreshEpg();
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshEpg();
+});
+window.addEventListener("online", refreshEpg);
 
 previousButton.addEventListener("click", () => playRelative("previous"));
 playbackButton.addEventListener("click", togglePlayback);

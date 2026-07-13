@@ -38,3 +38,15 @@ export function createMediaMetadata(metadata) {
 
   return new MediaMetadata(metadata);
 }
+
+export function createRadioMetadata({ channelName, regionName, program }) {
+  const metadata = {
+    title: program?.title || channelName,
+    artist: channelName,
+    album: regionName,
+  };
+  if (program?.programImageUrl) {
+    metadata.artwork = [{ src: program.programImageUrl, sizes: "512x512", type: "image/jpeg" }];
+  }
+  return metadata;
+}

@@ -5,6 +5,7 @@ import {
   registerRadioMediaSessionActions,
   setLiveMediaSessionPosition,
   setMediaSessionActionHandler,
+  createRadioMetadata,
 } from "../src/mediaSession.js";
 
 test("setMediaSessionActionHandler ignores unsupported browser media actions", () => {
@@ -85,5 +86,18 @@ test("setLiveMediaSessionPosition ignores unsupported browser position state", (
 
   assert.doesNotThrow(() => {
     setLiveMediaSessionPosition(mediaSession);
+  });
+});
+
+test("createRadioMetadata uses program title, channel artist, and artwork", () => {
+  assert.deepEqual(createRadioMetadata({
+    channelName: "KBS 1라디오",
+    regionName: "부산",
+    program: { title: "KBS 뉴스", programImageUrl: "https://example.test/news.jpg" },
+  }), {
+    title: "KBS 뉴스",
+    artist: "KBS 1라디오",
+    album: "부산",
+    artwork: [{ src: "https://example.test/news.jpg", sizes: "512x512", type: "image/jpeg" }],
   });
 });

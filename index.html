@@ -20,8 +20,20 @@
           </header>
 
           <section class="now-panel" aria-label="현재 재생 채널">
-            <h1 id="nowTitle">채널을 선택해 주세요</h1>
-            <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
+            <div class="now-content">
+              <div class="program-artwork-wrap">
+                <img id="programArtwork" class="program-artwork" alt="" hidden />
+              </div>
+              <div class="now-copy">
+                <h1 id="nowTitle">채널을 선택해 주세요</h1>
+                <p id="nowProgram" class="now-program" hidden></p>
+                <p id="nowMeta">재생 목록에서 채널을 선택하면 재생됩니다.</p>
+              </div>
+            </div>
+            <div class="program-progress" id="programProgressWrap" hidden>
+              <progress id="programProgress" max="100" value="0" aria-label="프로그램 진행률"></progress>
+              <span class="program-time" id="programTime"></span>
+            </div>
           </section>
 
           <audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
