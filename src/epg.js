@@ -37,9 +37,9 @@ export function progressAt(program, now = new Date()) {
 }
 
 export function formatProgramTime(date) {
-  return date instanceof Date && !Number.isNaN(date.getTime())
-    ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
-    : "";
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+  return `${String(koreaTime.getUTCHours()).padStart(2, "0")}:${String(koreaTime.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 export function programPositionState(program, now = new Date()) {
