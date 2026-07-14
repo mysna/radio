@@ -14,15 +14,43 @@ export function normalizeNowResponse(payload, baseUrl = EPG_API_BASE_URL) {
       programImageUrl: imageUrl(current.program_image_url, baseUrl),
       startsAt: new Date(current.starts_at),
       endsAt: new Date(current.ends_at),
+      nextProgram: normalizeProgram(entry.next || entry.next_program || current.next || current.next_program, baseUrl),
     } : null);
   });
   return result;
+}
+
+function normalizeProgram(program, baseUrl) {
+  if (!program) return null;
+  return {
+    ...program,
+    programImageUrl: imageUrl(program.program_image_url, baseUrl),
+    startsAt: new Date(program.starts_at),
+    endsAt: new Date(program.ends_at),
+  };
 }
 
 export function progressAt(program, now = new Date()) {
   if (!program || !(program.startsAt instanceof Date) || !(program.endsAt instanceof Date)) return 0;
   const duration = program.endsAt - program.startsAt;
   return duration > 0 ? Math.min(100, Math.max(0, ((now - program.startsAt) / duration) * 100)) : 0;
+}
+
+export function formatProgramTime(date) {
+  return date instanceof Date && !Number.isNaN(date.getTime())
+    ? `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`
+    : "";
+}
+
+export function programPositionState(program, now = new Date()) {
+  if (!program?.startsAt || !program?.endsAt) return null;
+  const duration = (program.endsAt - program.startsAt) / 1000;
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+  return {
+    duration,
+    playbackRate: 1,
+    position: Math.min(duration, Math.max(0, (now - program.startsAt) / 1000)),
+  };
 }
 
 export function nextRefreshDelay(program, now = new Date()) {

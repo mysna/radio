@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   registerRadioMediaSessionActions,
   setLiveMediaSessionPosition,
+  setProgramMediaSessionPosition,
   setMediaSessionActionHandler,
   createRadioMetadata,
 } from "../src/mediaSession.js";
@@ -87,6 +88,14 @@ test("setLiveMediaSessionPosition ignores unsupported browser position state", (
   assert.doesNotThrow(() => {
     setLiveMediaSessionPosition(mediaSession);
   });
+});
+
+test("setProgramMediaSessionPosition applies scheduled program progress", () => {
+  const calls = [];
+  setProgramMediaSessionPosition({ setPositionState: (state) => calls.push(state) }, {
+    duration: 3600, playbackRate: 1, position: 900,
+  });
+  assert.deepEqual(calls, [{ duration: 3600, playbackRate: 1, position: 900 }]);
 });
 
 test("createRadioMetadata uses program title, channel artist, and artwork", () => {

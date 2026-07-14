@@ -22,6 +22,15 @@ export function setLiveMediaSessionPosition(mediaSession) {
   }
 }
 
+export function setProgramMediaSessionPosition(mediaSession, positionState) {
+  if (typeof mediaSession.setPositionState !== "function" || !positionState) return;
+  try {
+    mediaSession.setPositionState(positionState);
+  } catch {
+    // Safari may reject position state values on some versions.
+  }
+}
+
 export function registerRadioMediaSessionActions(mediaSession, handlers) {
   setMediaSessionActionHandler(mediaSession, "previoustrack", handlers.previous);
   setMediaSessionActionHandler(mediaSession, "nexttrack", handlers.next);

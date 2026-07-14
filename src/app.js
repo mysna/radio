@@ -4,8 +4,9 @@ import {
   createRadioMetadata,
   registerRadioMediaSessionActions,
   setLiveMediaSessionPosition,
+  setProgramMediaSessionPosition,
 } from "./mediaSession.js";
-import { fetchCurrentPrograms, nextRefreshDelay, progressAt } from "./epg.js";
+import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, programPositionState, progressAt } from "./epg.js";
 import {
   getPlaybackButtonState,
   getPlaybackFailureMessage,
@@ -34,7 +35,8 @@ const programArtwork = document.querySelector("#programArtwork");
 const programArtworkWrap = document.querySelector(".program-artwork-wrap");
 const programProgressWrap = document.querySelector("#programProgressWrap");
 const programProgress = document.querySelector("#programProgress");
-const programTime = document.querySelector("#programTime");
+const programStartTime = document.querySelector("#programStartTime");
+const programEndTime = document.querySelector("#programEndTime");
 const statusLine = document.querySelector("#statusLine");
 const playlistList = document.querySelector("#playlistList");
 const channelList = document.querySelector("#channelList");
@@ -154,12 +156,20 @@ function renderPlaylist(playlist) {
       <span class="station-copy">
         <span class="station-title"></span>
         <span class="station-meta"></span>
-        <span class="station-program"></span>
+        <span class="station-program">
+          <span class="station-program-line current-program-line"></span>
+          <span class="station-program-line next-program-line"></span>
+        </span>
       </span>
     `;
     playButton.querySelector(".station-title").textContent = title;
     playButton.querySelector(".station-meta").textContent = meta;
-    playButton.querySelector(".station-program").textContent = program?.title || "편성 정보 없음";
+    playButton.querySelector(".current-program-line").textContent = program?.title
+      ? `${formatProgramTime(program.startsAt)} ${program.title}`
+      : "";
+    playButton.querySelector(".next-program-line").textContent = program?.nextProgram?.title
+      ? `${formatProgramTime(program.nextProgram.startsAt)} ${program.nextProgram.title}`
+      : "";
     playButton.addEventListener("click", () => playChannel(channel.id, true));
 
     const removeButton = document.createElement("button");
@@ -249,15 +259,12 @@ function renderNowPlaying(channel) {
   updateProgramProgress(program);
 }
 
-function formatProgramTime(date) {
-  return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-}
-
 function updateProgramProgress(program) {
   if (!program) return;
   const now = new Date();
   programProgress.value = progressAt(program, now);
-  programTime.textContent = `${formatProgramTime(program.startsAt)}–${formatProgramTime(program.endsAt)}`;
+  programStartTime.textContent = formatProgramTime(program.startsAt);
+  programEndTime.textContent = formatProgramTime(program.endsAt);
 }
 
 function scheduleEpgRefresh() {
@@ -395,7 +402,12 @@ function updateMediaSession(channel) {
     regionName: getRegionName(channel.regionId),
     program: currentProgram(channel),
   }));
-  setLiveMediaSessionPosition(navigator.mediaSession);
+  const positionState = programPositionState(currentProgram(channel));
+  if (positionState) {
+    setProgramMediaSessionPosition(navigator.mediaSession, positionState);
+  } else {
+    setLiveMediaSessionPosition(navigator.mediaSession);
+  }
   setupMediaSessionActions();
   navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
 }
@@ -475,6 +487,15 @@ audio.addEventListener("pause", () => {
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("ended", () => playRelative("next"));
+
+setInterval(() => {
+  const program = currentProgram(getActiveChannel());
+  if (!program) return;
+  updateProgramProgress(program);
+  if ("mediaSession" in navigator) {
+    setProgramMediaSessionPosition(navigator.mediaSession, programPositionState(program));
+  }
+}, 1_000);
 
 keepActiveChannelInPlaylist();
 updateAudioSource(shouldAutoplayRestoredChannel(activeChannelId, CHANNELS, selectedIds), {

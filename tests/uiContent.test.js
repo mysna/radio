@@ -57,6 +57,14 @@ test("current player includes EPG artwork and progress hooks", () => {
   assert.match(indexHtml, /id="programArtwork"/);
   assert.match(indexHtml, /id="programProgress"/);
   assert.match(indexHtml, /id="nowProgram"/);
+  assert.match(indexHtml, /id="programStartTime"/);
+  assert.match(indexHtml, /id="programEndTime"/);
+});
+
+test("playlist leaves unavailable program text blank", () => {
+  assert.match(appJs, /program\?\.title/);
+  assert.match(appJs, /program\?\.nextProgram/);
+  assert.match(appJs, /station-program-line/);
 });
 
 test("transport controls are icon buttons that stay in one row", () => {
