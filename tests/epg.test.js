@@ -1,18 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchCurrentPrograms, formatProgramTime, imageUrl, nextRefreshDelay, normalizeNowResponse, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "../src/epg.js";
+import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, normalizeNowResponse, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "../src/epg.js";
 
 const current = {
   title: "KBS 뉴스", starts_at: "2026-07-14T00:00:00Z", ends_at: "2026-07-14T01:00:00Z",
   program_image_url: "/v1/images/news/medium",
 };
 
-test("normalizes current program and resolves image URLs", () => {
+test("normalizes current program without image metadata", () => {
   const programs = normalizeNowResponse({ results: [{ radio_id: "radio-1", current, next: {
     title: "오전 프로그램", starts_at: "2026-07-14T01:00:00Z", ends_at: "2026-07-14T02:00:00Z",
   } }] }, "https://epg.test");
   assert.equal(programs.get("radio-1").title, "KBS 뉴스");
-  assert.equal(programs.get("radio-1").programImageUrl, "https://epg.test/v1/images/news/medium");
+  assert.equal("programImageUrl" in programs.get("radio-1"), false);
   assert.equal(programs.get("radio-1").nextProgram.title, "오전 프로그램");
 });
 
@@ -34,10 +34,6 @@ test("builds finite Media Session progress from the current program", () => {
     playbackRate: 1,
     position: 900,
   });
-});
-
-test("imageUrl accepts empty values", () => {
-  assert.equal(imageUrl("", "https://epg.test"), "");
 });
 
 test("fetchCurrentPrograms splits requests at the API limit", async () => {

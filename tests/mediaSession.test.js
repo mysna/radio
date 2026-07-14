@@ -98,7 +98,7 @@ test("setProgramMediaSessionPosition applies scheduled program progress", () => 
   assert.deepEqual(calls, [{ duration: 3600, playbackRate: 1, position: 900 }]);
 });
 
-test("createRadioMetadata uses program title, channel artist, and artwork", () => {
+test("createRadioMetadata omits program artwork", () => {
   assert.deepEqual(createRadioMetadata({
     channelName: "KBS 1라디오",
     regionName: "부산",
@@ -107,6 +107,5 @@ test("createRadioMetadata uses program title, channel artist, and artwork", () =
     title: "KBS 뉴스",
     artist: "KBS 1라디오",
     album: "부산",
-    artwork: [{ src: "https://example.test/news.jpg", sizes: "512x512", type: "image/jpeg" }],
   });
 });

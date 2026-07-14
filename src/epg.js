@@ -2,31 +2,24 @@ import { EPG_API_BASE_URL, EPG_REFRESH_INTERVAL_MS } from "./config.js";
 
 const UNKNOWN_ID_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export function imageUrl(value, baseUrl = EPG_API_BASE_URL) {
-  if (!value) return "";
-  return new URL(value, `${baseUrl.replace(/\/$/, "")}/`).href;
-}
-
-export function normalizeNowResponse(payload, baseUrl = EPG_API_BASE_URL) {
+export function normalizeNowResponse(payload) {
   const result = new Map();
   (payload?.results || []).forEach((entry) => {
     const current = entry.current;
     result.set(entry.radio_id, current ? {
       ...current,
-      programImageUrl: imageUrl(current.program_image_url, baseUrl),
       startsAt: new Date(current.starts_at),
       endsAt: new Date(current.ends_at),
-      nextProgram: normalizeProgram(entry.next || entry.next_program || current.next || current.next_program, baseUrl),
+      nextProgram: normalizeProgram(entry.next || entry.next_program || current.next || current.next_program),
     } : null);
   });
   return result;
 }
 
-function normalizeProgram(program, baseUrl) {
+function normalizeProgram(program) {
   if (!program) return null;
   return {
     ...program,
-    programImageUrl: imageUrl(program.program_image_url, baseUrl),
     startsAt: new Date(program.starts_at),
     endsAt: new Date(program.ends_at),
   };
@@ -97,7 +90,7 @@ export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = 
       (payload?.results || []).forEach((entry) => {
         if (entry.status === "not_found") callbacks.onUnknownId?.(entry.radio_id);
       });
-      const programs = normalizeNowResponse(payload, baseUrl);
+      const programs = normalizeNowResponse(payload);
       callbacks.onUpdate?.(programs);
       return programs;
     }
