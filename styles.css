@@ -177,11 +177,16 @@ h3 {
   line-height: 1.55;
 }
 
-.now-content { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
-.program-artwork-wrap { width: 0; overflow: hidden; transition: width 160ms ease; }
-.program-artwork-wrap.has-artwork { width: 88px; }
-.program-artwork { display: block; width: 88px; height: 88px; object-fit: cover; border-radius: 14px; }
-.now-copy { min-width: 0; }
+.now-content { display: grid; grid-template-columns: minmax(0, 1fr); }
+.program-artwork-wrap { width: 0; height: 0; overflow: hidden; }
+.program-artwork-wrap.has-artwork {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 16px 0;
+}
+.program-artwork { position: absolute; inset: 0; display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; margin: auto; border-radius: 14px; }
 .now-program { margin: 0 0 6px; font-size: 1.1rem; font-weight: 800; }
 .program-progress { margin-top: 18px; }
 .program-progress progress { width: 100%; height: 12px; accent-color: var(--color-accent); }

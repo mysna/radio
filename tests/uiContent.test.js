@@ -61,6 +61,17 @@ test("current player includes EPG artwork and progress hooks", () => {
   assert.match(indexHtml, /id="programEndTime"/);
 });
 
+test("current playback details stack vertically around proportionally scaled artwork", () => {
+  assert.match(
+    indexHtml,
+    /id="nowTitle"[\s\S]*id="nowMeta"[\s\S]*id="programArtwork"[\s\S]*id="nowProgram"[\s\S]*id="programProgress"/,
+  );
+  assert.match(stylesCss, /\.now-content\s*{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(stylesCss, /\.program-artwork-wrap\.has-artwork\s*{[\s\S]*width:\s*100%;[\s\S]*aspect-ratio:\s*1/);
+  assert.match(stylesCss, /\.program-artwork-wrap\.has-artwork\s*{[\s\S]*position:\s*relative;/);
+  assert.match(stylesCss, /\.program-artwork\s*{[\s\S]*position:\s*absolute;[\s\S]*max-width:\s*100%;[\s\S]*max-height:\s*100%;[\s\S]*width:\s*auto;[\s\S]*height:\s*auto;/);
+});
+
 test("playlist leaves unavailable program text blank", () => {
   assert.match(appJs, /program\?\.title/);
   assert.match(appJs, /program\?\.nextProgram/);
