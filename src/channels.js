@@ -251,16 +251,17 @@ function slug(value) {
   return value || "main";
 }
 
-export const CHANNELS = rawChannels.map(([regionId, name, stn, ch, city], index) => ({
-  id: `${regionId}-${String(index + 1).padStart(3, "0")}-${stn}-${slug(ch)}-${slug(city)}`,
-  regionId,
-  name,
-  stn,
-  ch,
-  city,
-}));
+export const CHANNELS = rawChannels
+  .map(([regionId, name, stn, ch, city], index) => ({
+    id: `${regionId}-${String(index + 1).padStart(3, "0")}-${stn}-${slug(ch)}-${slug(city)}`,
+    regionId,
+    name,
+    stn,
+    ch,
+    city,
+  }))
+  .filter((channel) => channel.name !== "MBC 보이는 라디오" && channel.stn !== "community");
 
 export function getRegionName(regionId) {
   return REGIONS.find((region) => region.id === regionId)?.name || regionId;
 }
-

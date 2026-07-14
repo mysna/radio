@@ -67,6 +67,15 @@ test("playlist leaves unavailable program text blank", () => {
   assert.match(appJs, /station-program-line/);
 });
 
+test("EPG refresh prioritizes the active channel and remembers unknown IDs", () => {
+  assert.match(appJs, /prioritizeRadioIds/);
+  assert.match(appJs, /unknownEpgIds/);
+  assert.match(appJs, /radio-player:unknown-epg-ids/);
+  assert.match(appJs, /serializeUnknownEpgIds/);
+  assert.match(appJs, /await fetchCurrentPrograms\(priority/);
+  assert.match(appJs, /fetchCurrentPrograms\(background/);
+});
+
 test("transport controls are icon buttons that stay in one row", () => {
   assert.match(indexHtml, /id="previousButton"[\s\S]*?<svg/);
   assert.match(indexHtml, /id="playbackButton"[\s\S]*?<svg/);

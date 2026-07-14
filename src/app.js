@@ -6,7 +6,7 @@ import {
   setLiveMediaSessionPosition,
   setProgramMediaSessionPosition,
 } from "./mediaSession.js";
-import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, programPositionState, progressAt } from "./epg.js";
+import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "./epg.js";
 import {
   getPlaybackButtonState,
   getPlaybackFailureMessage,
@@ -26,6 +26,7 @@ import {
 
 const STORAGE_KEY = "radio-player:selected-channel-ids";
 const ACTIVE_KEY = "radio-player:active-channel-id";
+const UNKNOWN_EPG_KEY = "radio-player:unknown-epg-ids";
 
 const audio = document.querySelector("#audioPlayer");
 const nowTitle = document.querySelector("#nowTitle");
@@ -59,6 +60,7 @@ let selectedIds = normalizeSelection(loadJson(STORAGE_KEY), CHANNELS);
 let activeChannelId = localStorage.getItem(ACTIVE_KEY) || "";
 let activeTab = "playlist";
 let currentPrograms = new Map();
+const unknownEpgIds = loadUnknownEpgIds();
 let epgTimer;
 let epgRequestId = 0;
 
@@ -67,6 +69,22 @@ function loadJson(key) {
     return JSON.parse(localStorage.getItem(key));
   } catch {
     return null;
+  }
+}
+
+function loadUnknownEpgIds() {
+  try {
+    return parseUnknownEpgIds(localStorage.getItem(UNKNOWN_EPG_KEY));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveUnknownEpgIds() {
+  try {
+    localStorage.setItem(UNKNOWN_EPG_KEY, serializeUnknownEpgIds(unknownEpgIds));
+  } catch {
+    // Storage can be unavailable in private browsing modes.
   }
 }
 
@@ -276,18 +294,28 @@ function scheduleEpgRefresh() {
 async function refreshEpg() {
   const playlist = getPlaylist(CHANNELS, selectedIds);
   const requestId = ++epgRequestId;
-  try {
-    currentPrograms = await fetchCurrentPrograms(playlist.map((channel) => channel.id));
-    if (requestId !== epgRequestId) return;
-    render();
-    updateMediaSession(getActiveChannel());
-  } catch {
-    if (requestId === epgRequestId) {
-      currentPrograms = new Map();
+  const radioIds = playlist.map((channel) => channel.id).filter((id) => !unknownEpgIds.has(id));
+  const { priority, background } = prioritizeRadioIds(radioIds, activeChannelId);
+  const callbacks = {
+    onUpdate(programs) {
+      if (requestId !== epgRequestId) return;
+      currentPrograms = new Map([...currentPrograms, ...programs]);
       render();
-    }
+      updateMediaSession(getActiveChannel());
+    },
+    onUnknownId(id) {
+      unknownEpgIds.add(id);
+      saveUnknownEpgIds();
+    },
+  };
+  try {
+    await fetchCurrentPrograms(priority, fetch, undefined, callbacks);
+    if (requestId !== epgRequestId) return;
+    await fetchCurrentPrograms(background, fetch, undefined, callbacks);
+  } catch {
+    // Keep the last successful EPG data visible during transient failures.
   }
-  scheduleEpgRefresh();
+  if (requestId === epgRequestId) scheduleEpgRefresh();
 }
 
 function createEmptyState(message) {

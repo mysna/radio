@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchCurrentPrograms, formatProgramTime, imageUrl, nextRefreshDelay, normalizeNowResponse, programPositionState, progressAt } from "../src/epg.js";
+import { fetchCurrentPrograms, formatProgramTime, imageUrl, nextRefreshDelay, normalizeNowResponse, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "../src/epg.js";
 
 const current = {
   title: "KBS 뉴스", starts_at: "2026-07-14T00:00:00Z", ends_at: "2026-07-14T01:00:00Z",
@@ -51,17 +51,54 @@ test("fetchCurrentPrograms splits requests at the API limit", async () => {
   assert.equal(programs.size, 0);
 });
 
-test("fetchCurrentPrograms isolates unknown aliases from a rejected batch", async () => {
+test("fetchCurrentPrograms keeps mixed results in request order without retries", async () => {
   const requested = [];
-  const programs = await fetchCurrentPrograms(["known", "unknown"], async (url) => {
+  const unknownIds = [];
+  const programs = await fetchCurrentPrograms(["known", "unknown", "unavailable"], async (url) => {
     const ids = new URL(url).searchParams.get("radio_ids").split(",");
     requested.push(ids);
-    if (ids.includes("unknown")) return { ok: false, status: 404 };
     return {
       ok: true,
-      json: async () => ({ results: [{ radio_id: "known", current }] }),
+      json: async () => ({ results: [
+        { radio_id: "known", status: "ok", current },
+        { radio_id: "unknown", status: "not_found", current: null, next: null },
+        { radio_id: "unavailable", status: "unavailable", current: null, next: null },
+      ] }),
     };
-  }, "https://epg.test");
+  }, "https://epg.test", {
+    onUnknownId(id) {
+      unknownIds.push(id);
+    },
+  });
   assert.equal(programs.get("known").title, "KBS 뉴스");
-  assert.deepEqual(requested, [["known", "unknown"], ["known"], ["unknown"]]);
+  assert.equal(programs.get("unknown"), null);
+  assert.equal(programs.get("unavailable"), null);
+  assert.deepEqual([...programs.keys()], ["known", "unknown", "unavailable"]);
+  assert.deepEqual(requested, [["known", "unknown", "unavailable"]]);
+  assert.deepEqual(unknownIds, ["unknown"]);
+});
+
+test("fetchCurrentPrograms reports each successful batch as it arrives", async () => {
+  const updates = [];
+  await fetchCurrentPrograms(["known"], async () => {
+    return { ok: true, json: async () => ({ results: [{ radio_id: "known", status: "ok", current }] }) };
+  }, "https://epg.test", {
+    onUpdate(programs) {
+      updates.push([...programs.keys()]);
+    },
+  });
+  assert.deepEqual(updates, [["known"]]);
+});
+
+test("prioritizeRadioIds separates the active channel from background requests", () => {
+  assert.deepEqual(prioritizeRadioIds(["one", "active", "two"], "active"), {
+    priority: ["active"],
+    background: ["one", "two"],
+  });
+});
+
+test("unknown EPG IDs are cached for one day", () => {
+  const cached = serializeUnknownEpgIds(new Set(["unknown"]), 1_000);
+  assert.deepEqual([...parseUnknownEpgIds(cached, 2_000)], ["unknown"]);
+  assert.deepEqual([...parseUnknownEpgIds(cached, 86_401_001)], []);
 });

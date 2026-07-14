@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { CHANNELS } from "../src/channels.js";
 
 import {
   buildStreamUrl,
@@ -19,6 +20,14 @@ const channels = [
   { id: "busan-knn-lovefm", name: "KNN 러브FM", stn: "sbs", ch: "lovefm", city: "busan", regionId: "busan" },
   { id: "seoul-obs", name: "OBS 라디오", stn: "obs", regionId: "seoul" },
 ];
+
+test("catalog excludes MBC visible radio", () => {
+  assert.equal(CHANNELS.some((channel) => channel.name === "MBC 보이는 라디오"), false);
+});
+
+test("catalog excludes community radio stations", () => {
+  assert.equal(CHANNELS.some((channel) => channel.stn === "community"), false);
+});
 
 test("buildStreamUrl creates the fixed stream URL with optional parameters", () => {
   assert.equal(

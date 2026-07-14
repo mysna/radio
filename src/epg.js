@@ -1,5 +1,7 @@
 import { EPG_API_BASE_URL, EPG_REFRESH_INTERVAL_MS } from "./config.js";
 
+const UNKNOWN_ID_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 export function imageUrl(value, baseUrl = EPG_API_BASE_URL) {
   if (!value) return "";
   return new URL(value, `${baseUrl.replace(/\/$/, "")}/`).href;
@@ -58,7 +60,29 @@ export function nextRefreshDelay(program, now = new Date()) {
   return Math.max(1_000, Math.min(EPG_REFRESH_INTERVAL_MS, program.endsAt - now + 250));
 }
 
-export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = EPG_API_BASE_URL) {
+export function prioritizeRadioIds(radioIds, activeId) {
+  const priority = activeId && radioIds.includes(activeId) ? [activeId] : [];
+  return {
+    priority,
+    background: radioIds.filter((id) => id !== activeId),
+  };
+}
+
+export function parseUnknownEpgIds(value, now = Date.now()) {
+  try {
+    const cache = JSON.parse(value);
+    if (!Array.isArray(cache.ids) || now - cache.savedAt > UNKNOWN_ID_CACHE_MAX_AGE_MS) return new Set();
+    return new Set(cache.ids);
+  } catch {
+    return new Set();
+  }
+}
+
+export function serializeUnknownEpgIds(ids, savedAt = Date.now()) {
+  return JSON.stringify({ savedAt, ids: [...ids] });
+}
+
+export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = EPG_API_BASE_URL, callbacks = {}) {
   if (!radioIds.length) return new Map();
   const batches = [];
   for (let index = 0; index < radioIds.length; index += 100) {
@@ -68,18 +92,15 @@ export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = 
     const url = new URL("/v1/now", `${baseUrl.replace(/\/$/, "")}/`);
     url.searchParams.set("radio_ids", batch.join(","));
     const response = await fetcher(url);
-    if (response.ok) return normalizeNowResponse(await response.json(), baseUrl);
-    // An unknown alias makes the Worker reject the whole batch. Isolate it
-    // so supported channels still receive current-program data.
-    if (response.status === 404 && batch.length > 1) {
-      const midpoint = Math.ceil(batch.length / 2);
-      const [left, right] = await Promise.all([
-        fetchBatch(batch.slice(0, midpoint)),
-        fetchBatch(batch.slice(midpoint)),
-      ]);
-      return new Map([...left, ...right]);
+    if (response.ok) {
+      const payload = await response.json();
+      (payload?.results || []).forEach((entry) => {
+        if (entry.status === "not_found") callbacks.onUnknownId?.(entry.radio_id);
+      });
+      const programs = normalizeNowResponse(payload, baseUrl);
+      callbacks.onUpdate?.(programs);
+      return programs;
     }
-    if (response.status === 404) return new Map();
     throw new Error(`EPG request failed: ${response.status}`);
   }
   const responses = await Promise.all(batches.map(fetchBatch));
