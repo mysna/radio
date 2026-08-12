@@ -97,7 +97,7 @@ test("now playing panel omits the audio visualizer", () => {
 });
 
 test("app does not import or start an audio visualizer", () => {
-  assert.match(indexHtml, /<audio id="audioPlayer" preload="none" crossorigin="anonymous"><\/audio>/);
+  assert.match(indexHtml, /<audio id="audioPlayer" preload="none"><\/audio>/);
   assert.doesNotMatch(appJs, /audioVisualizer/);
   assert.doesNotMatch(appJs, /createAudioVisualizer/);
   assert.doesNotMatch(appJs, /visualizer\./);
