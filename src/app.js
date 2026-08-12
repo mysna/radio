@@ -61,6 +61,8 @@ let currentPrograms = new Map();
 const unknownEpgIds = loadUnknownEpgIds();
 let epgTimer;
 let epgRequestId = 0;
+let resumeAfterInterruption = false;
+let isUserInitiatedPause = false;
 
 function loadJson(key) {
   try {
@@ -350,7 +352,7 @@ function togglePlayback() {
   }
 
   if (!audio.paused) {
-    audio.pause();
+    pausePlayback();
     return;
   }
 
@@ -361,6 +363,27 @@ function togglePlayback() {
 
   updateAudioSource(true);
   render();
+}
+
+function pausePlayback() {
+  resumeAfterInterruption = false;
+  isUserInitiatedPause = true;
+  audio.pause();
+  isUserInitiatedPause = false;
+}
+
+function resumeAfterSystemInterruption() {
+  if (!resumeAfterInterruption || !audio.paused) {
+    return;
+  }
+
+  resumeAfterInterruption = false;
+  audio.play().then(() => {
+    statusLine.textContent = "";
+  }).catch(() => {
+    statusLine.textContent = "통화 후 재생을 다시 시작할 수 없습니다. 재생을 눌러 주세요.";
+    renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
+  });
 }
 
 function updateAudioSource(autoplay, options = {}) {
@@ -441,7 +464,7 @@ function setupMediaSessionActions() {
     previous: () => playRelative("previous"),
     next: () => playRelative("next"),
     play: () => audio.play(),
-    pause: () => audio.pause(),
+    pause: pausePlayback,
   });
 }
 
@@ -472,7 +495,13 @@ setupRegions();
 setupMediaSessionActions();
 refreshEpg();
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) refreshEpg();
+  if (document.hidden) {
+    resumeAfterInterruption = !audio.paused;
+    return;
+  }
+
+  refreshEpg();
+  resumeAfterSystemInterruption();
 });
 window.addEventListener("online", refreshEpg);
 
@@ -501,6 +530,9 @@ audio.addEventListener("play", () => {
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("pause", () => {
+  if (document.hidden && !isUserInitiatedPause) {
+    resumeAfterInterruption = true;
+  }
   if ("mediaSession" in navigator) {
     navigator.mediaSession.playbackState = "paused";
   }
