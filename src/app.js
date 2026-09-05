@@ -534,6 +534,7 @@ audio.addEventListener("play", () => {
   if (channel) {
     updateMediaSession(channel);
     analytics.trackListenStart(channel.id, {
+      channelName: channel.name,
       broadcaster: channel.stn,
       regionId: channel.regionId,
       getProgram: () => {
