@@ -49,10 +49,6 @@ function sendBeaconJson(baseUrl, path, body, sendBeacon) {
   }
 }
 
-function isHidden(documentRef) {
-  return Boolean(documentRef && documentRef.hidden);
-}
-
 // getProgram()은 "지금 이 채널에서 재생 중인 프로그램"을 알려주는 콜백이다. 재생 도중
 // 프로그램이 바뀔 수 있어서 매 하트비트마다 다시 호출해 그 시점의 값을 실어 보낸다.
 function readProgram(getProgram) {
@@ -102,8 +98,9 @@ export function createAnalyticsSession(options = {}) {
     );
     visitId = result?.visit_id ?? null;
     if (visitId) {
+      // 화면이 꺼지거나 다른 앱으로 전환돼도(document.hidden) 라디오는 계속 재생되는 게
+      // 정상적인 사용 방식이라, 탭이 백그라운드라는 이유만으로 하트비트를 건너뛰지 않는다.
       visitHeartbeatTimer = setInterval(() => {
-        if (isHidden(documentRef)) return;
         postJson(baseUrl, "/v1/events/visit/heartbeat", { visit_id: visitId }, fetcher);
       }, visitHeartbeatIntervalMs);
     }
@@ -159,7 +156,6 @@ export function createAnalyticsSession(options = {}) {
     listenSessionId = result.session_id;
     currentGetProgram = getProgram;
     listenHeartbeatTimer = setInterval(() => {
-      if (isHidden(documentRef)) return;
       postJson(
         baseUrl,
         "/v1/events/listen/heartbeat",
