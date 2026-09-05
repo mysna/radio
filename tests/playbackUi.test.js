@@ -55,16 +55,9 @@ test("shouldAutoplayRestoredChannel skips startup playback without a saved playl
   assert.equal(shouldAutoplayRestoredChannel("mbc-fm4u", channels, selectedIds), false);
 });
 
-test("getPlaybackFailureMessage explains browser autoplay blocking for restored channels", () => {
+test("getPlaybackFailureMessage returns the generic playback failure message", () => {
   assert.equal(
-    getPlaybackFailureMessage({ name: "NotAllowedError" }, { isRestoredStartup: true }),
-    "브라우저 자동재생 제한으로 멈춰 있습니다. 재생을 눌러 마지막 채널을 이어 들으세요.",
-  );
-});
-
-test("getPlaybackFailureMessage keeps the generic message for normal playback failures", () => {
-  assert.equal(
-    getPlaybackFailureMessage(new Error("network"), { isRestoredStartup: false }),
+    getPlaybackFailureMessage(),
     "재생이 시작되지 않으면 채널을 다시 선택해 주세요.",
   );
 });

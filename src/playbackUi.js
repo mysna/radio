@@ -24,10 +24,6 @@ export function shouldAutoplayRestoredChannel(activeChannelId, channels, selecte
   return channels.some((channel) => channel.id === activeChannelId);
 }
 
-export function getPlaybackFailureMessage(error, { isRestoredStartup }) {
-  if (isRestoredStartup && error?.name === "NotAllowedError") {
-    return "브라우저 자동재생 제한으로 멈춰 있습니다. 재생을 눌러 마지막 채널을 이어 들으세요.";
-  }
-
+export function getPlaybackFailureMessage() {
   return "재생이 시작되지 않으면 채널을 다시 선택해 주세요.";
 }
