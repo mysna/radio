@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createAnalyticsSession, getVisitorId } from "../src/analytics.js";
+import { createAnalyticsSession, getVisitorId } from "../src/usage.js";
 
 function createMemoryStorage(initial = {}) {
   const store = new Map(Object.entries(initial));
