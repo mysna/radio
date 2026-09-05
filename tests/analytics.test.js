@@ -171,6 +171,33 @@ test("endListenSession is a no-op when nothing is playing", () => {
   assert.equal(calls.length, 0);
 });
 
+test("heartbeats keep sending while the tab is hidden (locked screen / other app)", async () => {
+  const storage = createMemoryStorage();
+  const { fetcher, calls } = createRecordingFetcher([{ visit_id: "visit-1" }, { session_id: "session-1" }]);
+  // 화면 잠금이나 다른 앱으로 전환된 상태를 흉내낸다 — 그래도 라디오는 계속 재생 중이다.
+  const documentRef = { hidden: true, referrer: "" };
+  const { sendBeacon } = createRecordingBeacon();
+
+  const session = createAnalyticsSession({
+    fetcher,
+    storage,
+    documentRef,
+    sendBeacon,
+    visitHeartbeatIntervalMs: 5,
+    listenHeartbeatIntervalMs: 5,
+  });
+  await session.trackListenStart("kbs.1radio.seoul");
+  await new Promise((resolve) => setTimeout(resolve, 30));
+
+  const visitHeartbeats = calls.filter((call) => call.url.endsWith("/v1/events/visit/heartbeat"));
+  const listenHeartbeats = calls.filter((call) => call.url.endsWith("/v1/events/listen/heartbeat"));
+  assert.ok(visitHeartbeats.length > 0, "visit heartbeat should still fire while hidden");
+  assert.ok(listenHeartbeats.length > 0, "listen heartbeat should still fire while hidden");
+
+  session.endListenSession();
+  session.endVisit();
+});
+
 test("a failed visit request never throws and simply skips listen tracking", async () => {
   const storage = createMemoryStorage();
   const fetcher = async () => {
