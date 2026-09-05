@@ -530,9 +530,17 @@ regionSelect.addEventListener("change", render);
 playlistTab.addEventListener("click", () => switchTab("playlist"));
 allTab.addEventListener("click", () => switchTab("all"));
 audio.addEventListener("play", () => {
-  if (getActiveChannel()) {
-    updateMediaSession(getActiveChannel());
-    analytics.trackListenStart(getActiveChannel().id);
+  const channel = getActiveChannel();
+  if (channel) {
+    updateMediaSession(channel);
+    analytics.trackListenStart(channel.id, {
+      broadcaster: channel.stn,
+      regionId: channel.regionId,
+      getProgram: () => {
+        const program = currentProgram(getActiveChannel());
+        return program ? { programId: program.program_id ?? null, programTitle: program.title ?? null } : null;
+      },
+    });
   }
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });

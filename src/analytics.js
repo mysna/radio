@@ -53,6 +53,23 @@ function isHidden(documentRef) {
   return Boolean(documentRef && documentRef.hidden);
 }
 
+// getProgram()은 "지금 이 채널에서 재생 중인 프로그램"을 알려주는 콜백이다. 재생 도중
+// 프로그램이 바뀔 수 있어서 매 하트비트마다 다시 호출해 그 시점의 값을 실어 보낸다.
+function readProgram(getProgram) {
+  if (typeof getProgram !== "function") {
+    return { program_id: null, program_title: null };
+  }
+  try {
+    const program = getProgram();
+    return {
+      program_id: program?.programId ?? null,
+      program_title: program?.programTitle ?? null,
+    };
+  } catch {
+    return { program_id: null, program_title: null };
+  }
+}
+
 /**
  * 방문(탭)과 채널 청취 이벤트를 서버로 보내는 세션 하나를 만든다.
  * 모든 외부 의존성(fetch/localStorage/sendBeacon/document)은 테스트에서 대체할 수 있도록
@@ -74,6 +91,7 @@ export function createAnalyticsSession(options = {}) {
   let visitHeartbeatTimer = null;
   let listenSessionId = null;
   let listenHeartbeatTimer = null;
+  let currentGetProgram = null;
 
   const visitReady = (async () => {
     const result = await postJson(
@@ -104,30 +122,50 @@ export function createAnalyticsSession(options = {}) {
     clearInterval(listenHeartbeatTimer);
     listenHeartbeatTimer = null;
     if (!listenSessionId) return;
-    sendBeaconJson(baseUrl, "/v1/events/listen/end", { session_id: listenSessionId }, sendBeacon);
+    sendBeaconJson(
+      baseUrl,
+      "/v1/events/listen/end",
+      { session_id: listenSessionId, ...readProgram(currentGetProgram) },
+      sendBeacon,
+    );
     listenSessionId = null;
+    currentGetProgram = null;
   }
 
-  async function trackListenStart(channelId) {
+  async function trackListenStart(channelId, meta = {}) {
     // 채널을 바꾸는 경우 이전 청취 구간을 먼저 닫는다.
     endListenSession();
     if (!channelId) return;
 
+    const { broadcaster = null, regionId = null, getProgram = null } = meta;
     const currentVisitId = await visitReady;
     if (!currentVisitId) return;
 
     const result = await postJson(
       baseUrl,
       "/v1/events/listen/start",
-      { visitor_id: visitorId, visit_id: currentVisitId, channel_id: channelId },
+      {
+        visitor_id: visitorId,
+        visit_id: currentVisitId,
+        channel_id: channelId,
+        broadcaster,
+        region_id: regionId,
+        ...readProgram(getProgram),
+      },
       fetcher,
     );
     if (!result?.session_id) return;
 
     listenSessionId = result.session_id;
+    currentGetProgram = getProgram;
     listenHeartbeatTimer = setInterval(() => {
       if (isHidden(documentRef)) return;
-      postJson(baseUrl, "/v1/events/listen/heartbeat", { session_id: listenSessionId }, fetcher);
+      postJson(
+        baseUrl,
+        "/v1/events/listen/heartbeat",
+        { session_id: listenSessionId, ...readProgram(currentGetProgram) },
+        fetcher,
+      );
     }, listenHeartbeatIntervalMs);
   }
 

@@ -87,9 +87,52 @@ test("trackListenStart waits for the visit before starting a listen session", as
     visitor_id: session.visitorId,
     visit_id: "visit-1",
     channel_id: "kbs.1radio.seoul",
+    broadcaster: null,
+    region_id: null,
+    program_id: null,
+    program_title: null,
   });
 
   session.endListenSession();
+  session.endVisit();
+});
+
+test("trackListenStart sends broadcaster/region/program metadata and refreshes the program on end", async () => {
+  const storage = createMemoryStorage();
+  const { fetcher, calls } = createRecordingFetcher([{ visit_id: "visit-1" }, { session_id: "session-1" }]);
+  const documentRef = { hidden: false, referrer: "" };
+  const { sendBeacon, calls: beaconCalls } = createRecordingBeacon();
+  let currentProgram = { programId: "kbs.news.0900", programTitle: "KBS 뉴스" };
+
+  const session = createAnalyticsSession({ fetcher, storage, documentRef, sendBeacon });
+  await session.trackListenStart("kbs.1radio.seoul", {
+    broadcaster: "kbs",
+    regionId: "seoul",
+    getProgram: () => currentProgram,
+  });
+
+  assert.deepEqual(calls[1].body, {
+    visitor_id: session.visitorId,
+    visit_id: "visit-1",
+    channel_id: "kbs.1radio.seoul",
+    broadcaster: "kbs",
+    region_id: "seoul",
+    program_id: "kbs.news.0900",
+    program_title: "KBS 뉴스",
+  });
+
+  // 재생 도중 다음 프로그램으로 바뀐 뒤 종료하면, 종료 시점의 최신 프로그램을 실어 보낸다.
+  currentProgram = { programId: "kbs.next", programTitle: "다음 프로그램" };
+  session.endListenSession();
+
+  assert.equal(beaconCalls.length, 1);
+  const endBody = JSON.parse(await beaconCalls[0].blob.text());
+  assert.deepEqual(endBody, {
+    session_id: "session-1",
+    program_id: "kbs.next",
+    program_title: "다음 프로그램",
+  });
+
   session.endVisit();
 });
 
