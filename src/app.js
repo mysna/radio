@@ -6,7 +6,7 @@ import {
   setLiveMediaSessionPosition,
   setProgramMediaSessionPosition,
 } from "./mediaSession.js";
-import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "./epg.js";
+import { fetchCurrentPrograms, formatProgramTime, isRecentlyUnknown, nextRefreshDelay, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "./epg.js";
 import {
   getPlaybackButtonState,
   getPlaybackFailureMessage,
@@ -76,7 +76,7 @@ function loadUnknownEpgIds() {
   try {
     return parseUnknownEpgIds(localStorage.getItem(UNKNOWN_EPG_KEY));
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 
@@ -288,7 +288,7 @@ function scheduleEpgRefresh() {
 async function refreshEpg() {
   const playlist = getPlaylist(CHANNELS, selectedIds);
   const requestId = ++epgRequestId;
-  const radioIds = playlist.map((channel) => channel.id).filter((id) => !unknownEpgIds.has(id));
+  const radioIds = playlist.map((channel) => channel.id).filter((id) => !isRecentlyUnknown(unknownEpgIds, id));
   const { priority, background } = prioritizeRadioIds(radioIds, activeChannelId);
   const callbacks = {
     onUpdate(programs) {
@@ -298,8 +298,11 @@ async function refreshEpg() {
       updateMediaSession(getActiveChannel());
     },
     onUnknownId(id) {
-      unknownEpgIds.add(id);
+      unknownEpgIds.set(id, Date.now());
       saveUnknownEpgIds();
+    },
+    onKnownId(id) {
+      if (unknownEpgIds.delete(id)) saveUnknownEpgIds();
     },
   };
   try {

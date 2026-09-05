@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchCurrentPrograms, formatProgramTime, nextRefreshDelay, normalizeNowResponse, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "../src/epg.js";
+import { fetchCurrentPrograms, formatProgramTime, isRecentlyUnknown, nextRefreshDelay, normalizeNowResponse, parseUnknownEpgIds, prioritizeRadioIds, programPositionState, progressAt, serializeUnknownEpgIds } from "../src/epg.js";
 
 const current = {
   title: "KBS 뉴스", starts_at: "2026-07-14T00:00:00Z", ends_at: "2026-07-14T01:00:00Z",
@@ -50,6 +50,7 @@ test("fetchCurrentPrograms splits requests at the API limit", async () => {
 test("fetchCurrentPrograms keeps mixed results in request order without retries", async () => {
   const requested = [];
   const unknownIds = [];
+  const knownIds = [];
   const programs = await fetchCurrentPrograms(["known", "unknown", "unavailable"], async (url) => {
     const ids = new URL(url).searchParams.get("radio_ids").split(",");
     requested.push(ids);
@@ -65,6 +66,9 @@ test("fetchCurrentPrograms keeps mixed results in request order without retries"
     onUnknownId(id) {
       unknownIds.push(id);
     },
+    onKnownId(id) {
+      knownIds.push(id);
+    },
   });
   assert.equal(programs.get("known").title, "KBS 뉴스");
   assert.equal(programs.get("unknown"), null);
@@ -72,6 +76,7 @@ test("fetchCurrentPrograms keeps mixed results in request order without retries"
   assert.deepEqual([...programs.keys()], ["known", "unknown", "unavailable"]);
   assert.deepEqual(requested, [["known", "unknown", "unavailable"]]);
   assert.deepEqual(unknownIds, ["unknown"]);
+  assert.deepEqual(knownIds, ["known", "unavailable"]);
 });
 
 test("fetchCurrentPrograms reports each successful batch as it arrives", async () => {
@@ -93,8 +98,19 @@ test("prioritizeRadioIds separates the active channel from background requests",
   });
 });
 
-test("unknown EPG IDs are cached for one day", () => {
-  const cached = serializeUnknownEpgIds(new Set(["unknown"]), 1_000);
-  assert.deepEqual([...parseUnknownEpgIds(cached, 2_000)], ["unknown"]);
-  assert.deepEqual([...parseUnknownEpgIds(cached, 86_401_001)], []);
+test("unknown EPG IDs round-trip through storage with their marked-at timestamp", () => {
+  const cached = serializeUnknownEpgIds(new Map([["unknown", 1_000]]));
+  assert.deepEqual([...parseUnknownEpgIds(cached)], [["unknown", 1_000]]);
+});
+
+test("parseUnknownEpgIds ignores malformed or legacy-shaped storage", () => {
+  assert.deepEqual([...parseUnknownEpgIds("not json")], []);
+  assert.deepEqual([...parseUnknownEpgIds(JSON.stringify({ savedAt: 1, ids: ["legacy"] }))], []);
+});
+
+test("isRecentlyUnknown only snoozes a channel within the recheck interval", () => {
+  const unknownIds = new Map([["unknown", 1_000]]);
+  assert.equal(isRecentlyUnknown(unknownIds, "unknown", 1_000 + 1_000), true);
+  assert.equal(isRecentlyUnknown(unknownIds, "unknown", 1_000 + 60 * 60 * 1000), false);
+  assert.equal(isRecentlyUnknown(unknownIds, "never-marked", 1_000), false);
 });

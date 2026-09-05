@@ -1,6 +1,9 @@
 import { EPG_API_BASE_URL, EPG_REFRESH_INTERVAL_MS } from "./config.js";
 
-const UNKNOWN_ID_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+// 알려지지 않은 채널을 30초마다 다시 조회하지 않도록 쉬어가는 간격이다. 하루로 두면
+// 배포 직후처럼 DB가 잠깐 비어 있던 순간에 전체 채널이 한꺼번에 "모르는 채널"로
+// 캐싱된 뒤, 백엔드가 몇 분 만에 복구돼도 다음 날까지 다시 확인하지 않는다.
+const UNKNOWN_RECHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 export function normalizeNowResponse(payload) {
   const result = new Map();
@@ -61,18 +64,27 @@ export function prioritizeRadioIds(radioIds, activeId) {
   };
 }
 
-export function parseUnknownEpgIds(value, now = Date.now()) {
+/** 채널별로 "모르는 채널로 표시된 시각"을 담은 Map을 저장값에서 복원한다. */
+export function parseUnknownEpgIds(value) {
   try {
     const cache = JSON.parse(value);
-    if (!Array.isArray(cache.ids) || now - cache.savedAt > UNKNOWN_ID_CACHE_MAX_AGE_MS) return new Set();
-    return new Set(cache.ids);
+    if (!cache || typeof cache.ids !== "object" || cache.ids === null) return new Map();
+    return new Map(
+      Object.entries(cache.ids).filter(([id, markedAt]) => typeof id === "string" && typeof markedAt === "number"),
+    );
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 
-export function serializeUnknownEpgIds(ids, savedAt = Date.now()) {
-  return JSON.stringify({ savedAt, ids: [...ids] });
+export function serializeUnknownEpgIds(unknownIds) {
+  return JSON.stringify({ ids: Object.fromEntries(unknownIds) });
+}
+
+/** 채널이 재확인 간격 안에 이미 "모르는 채널"로 표시됐는지 판단한다. */
+export function isRecentlyUnknown(unknownIds, id, now = Date.now()) {
+  const markedAt = unknownIds.get(id);
+  return typeof markedAt === "number" && now - markedAt < UNKNOWN_RECHECK_INTERVAL_MS;
 }
 
 export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = EPG_API_BASE_URL, callbacks = {}) {
@@ -88,7 +100,11 @@ export async function fetchCurrentPrograms(radioIds, fetcher = fetch, baseUrl = 
     if (response.ok) {
       const payload = await response.json();
       (payload?.results || []).forEach((entry) => {
-        if (entry.status === "not_found") callbacks.onUnknownId?.(entry.radio_id);
+        if (entry.status === "not_found") {
+          callbacks.onUnknownId?.(entry.radio_id);
+        } else {
+          callbacks.onKnownId?.(entry.radio_id);
+        }
       });
       const programs = normalizeNowResponse(payload);
       callbacks.onUpdate?.(programs);
