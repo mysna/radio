@@ -1,3 +1,4 @@
+import { createAnalyticsSession } from "./analytics.js";
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
 import {
   createMediaMetadata,
@@ -63,6 +64,7 @@ let epgTimer;
 let epgRequestId = 0;
 let resumeAfterInterruption = false;
 let isUserInitiatedPause = false;
+const analytics = createAnalyticsSession();
 
 function loadJson(key) {
   try {
@@ -393,6 +395,7 @@ function updateAudioSource(autoplay, options = {}) {
   const channel = getActiveChannel();
 
   if (!channel) {
+    analytics.endListenSession();
     audio.removeAttribute("src");
     updateMediaSession(null);
     return;
@@ -401,6 +404,8 @@ function updateAudioSource(autoplay, options = {}) {
   const streamUrl = buildStreamUrl(channel);
 
   if (audio.src !== streamUrl) {
+    // 재생 중 채널을 바꾸는 경우 브라우저의 pause 이벤트에 기대지 않고 이전 청취 구간을 직접 닫는다.
+    analytics.endListenSession();
     audio.src = streamUrl;
   }
 
@@ -529,10 +534,12 @@ allTab.addEventListener("click", () => switchTab("all"));
 audio.addEventListener("play", () => {
   if (getActiveChannel()) {
     updateMediaSession(getActiveChannel());
+    analytics.trackListenStart(getActiveChannel().id);
   }
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
 audio.addEventListener("pause", () => {
+  analytics.endListenSession();
   if (document.hidden && !isUserInitiatedPause) {
     resumeAfterInterruption = true;
   }
@@ -541,7 +548,14 @@ audio.addEventListener("pause", () => {
   }
   renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
 });
-audio.addEventListener("ended", () => playRelative("next"));
+audio.addEventListener("ended", () => {
+  analytics.endListenSession();
+  playRelative("next");
+});
+window.addEventListener("pagehide", () => {
+  analytics.endListenSession();
+  analytics.endVisit();
+});
 
 setInterval(() => {
   const program = currentProgram(getActiveChannel());
