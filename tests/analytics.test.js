@@ -87,6 +87,7 @@ test("trackListenStart waits for the visit before starting a listen session", as
     visitor_id: session.visitorId,
     visit_id: "visit-1",
     channel_id: "kbs.1radio.seoul",
+    channel_name: null,
     broadcaster: null,
     region_id: null,
     program_id: null,
@@ -106,6 +107,7 @@ test("trackListenStart sends broadcaster/region/program metadata and refreshes t
 
   const session = createAnalyticsSession({ fetcher, storage, documentRef, sendBeacon });
   await session.trackListenStart("kbs.1radio.seoul", {
+    channelName: "KBS 1라디오",
     broadcaster: "kbs",
     regionId: "seoul",
     getProgram: () => currentProgram,
@@ -115,6 +117,7 @@ test("trackListenStart sends broadcaster/region/program metadata and refreshes t
     visitor_id: session.visitorId,
     visit_id: "visit-1",
     channel_id: "kbs.1radio.seoul",
+    channel_name: "KBS 1라디오",
     broadcaster: "kbs",
     region_id: "seoul",
     program_id: "kbs.news.0900",

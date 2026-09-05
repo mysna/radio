@@ -134,7 +134,7 @@ export function createAnalyticsSession(options = {}) {
     endListenSession();
     if (!channelId) return;
 
-    const { broadcaster = null, regionId = null, getProgram = null } = meta;
+    const { channelName = null, broadcaster = null, regionId = null, getProgram = null } = meta;
     const currentVisitId = await visitReady;
     if (!currentVisitId) return;
 
@@ -145,6 +145,7 @@ export function createAnalyticsSession(options = {}) {
         visitor_id: visitorId,
         visit_id: currentVisitId,
         channel_id: channelId,
+        channel_name: channelName,
         broadcaster,
         region_id: regionId,
         ...readProgram(getProgram),
