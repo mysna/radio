@@ -1,4 +1,4 @@
-import { createAnalyticsSession } from "./analytics.js";
+import { createAnalyticsSession } from "./usage.js";
 import { CHANNELS, REGIONS, getRegionName } from "./channels.js";
 import {
   createMediaMetadata,
