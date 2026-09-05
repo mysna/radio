@@ -389,7 +389,7 @@ function resumeAfterSystemInterruption() {
   });
 }
 
-function updateAudioSource(autoplay, options = {}) {
+function updateAudioSource(autoplay) {
   const channel = getActiveChannel();
 
   if (!channel) {
@@ -409,10 +409,8 @@ function updateAudioSource(autoplay, options = {}) {
   if (autoplay) {
     audio.play().then(() => {
       statusLine.textContent = "";
-    }).catch((error) => {
-      statusLine.textContent = getPlaybackFailureMessage(error, {
-        isRestoredStartup: options.isRestoredStartup === true,
-      });
+    }).catch(() => {
+      statusLine.textContent = getPlaybackFailureMessage();
       renderPlaybackButton(getPlaylist(CHANNELS, selectedIds));
     });
   }
@@ -553,7 +551,5 @@ setInterval(() => {
 }, 1_000);
 
 keepActiveChannelInPlaylist();
-updateAudioSource(shouldAutoplayRestoredChannel(activeChannelId, CHANNELS, selectedIds), {
-  isRestoredStartup: true,
-});
+updateAudioSource(shouldAutoplayRestoredChannel(activeChannelId, CHANNELS, selectedIds));
 render();
